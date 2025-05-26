@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: marky
+
+  config:
+    import: optional:file:.env[.properties]
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+
+  ai:
+    model:
+      chat: openai
+      embedding: ollama
+
+    openai:
+      api-key: ${OPEN_AI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.4
+          internal-tool-execution-enabled: true
+
+#      embedding:
+#        api-key: ${OPEN_AI_API_KEY}
+#        options:
+#          model: text-embedding-3-small
+#          dimensions: 768
+
+    ollama:
+      base-url: http://localhost:11434
+      embedding:
+        options:
+          # model: mxbai-embed-large
+          model : jeffh/intfloat-multilingual-e5-large-instruct:q8_0
+          keep-alive: 5m
+
+    vectorstore:
+      pgvector:
+        dimensions: 1024
+        initialize-schema: false
+        max-document-batch-size: 10000
+        index-type: hnsw
+        distance-type: cosine-distance
+        table-name: vector_store
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+logging:
+  level:
+    org.springframework.ai: DEBUG
