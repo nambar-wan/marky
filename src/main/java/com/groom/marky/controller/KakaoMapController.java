@@ -45,8 +45,8 @@ public class KakaoMapController {
 	}
 
 	@GetMapping("/cafe")
-	public ResponseEntity<?> getCafes() {
-		// 박스 받아서 박스 범위 내의 주차장 조회 - 2000건
+	public ResponseEntity<?> searchCafes() {
+		// 박스 받아서 박스 범위 내의 카페 조회
 		Set<Rectangle> cafeBoxes = seoulPlaceSearchService.getCafeRects();
 		log.info("cafeBoxes {}", cafeBoxes.size());
 

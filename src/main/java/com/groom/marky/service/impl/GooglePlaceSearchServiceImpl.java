@@ -76,7 +76,9 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		"places.servesLunch",
 		"places.servesVegetarianFood",
 		"places.servesWine",
-		"places.takeout"
+		"places.takeout",
+
+		"places.weekdayDescriptions"
 	);
 
 	private String apiKey;
@@ -95,6 +97,8 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 	@Override
 	public GooglePlacesApiResponse search(String text, GooglePlaceType type, Rectangle rect) {
+
+		// 카페, 카페타입, 범위
 		log.info("호출");
 
 		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();

@@ -25,7 +25,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		2. similaritySearch(mood: String, ids: List<String>)
 		- 사용자가 원하는 분위기(mood)와 의미적으로 유사한 장소를 5개 추천합니다.
 		- 이 함수는 pgvector 기반의 벡터 임베딩을 사용하여 장소 설명과 mood 간의 의미 유사도를 비교합니다.
-		- 'ids' 파라미터로 전달된 주차장 목록 중에서 분위기와 가장 유사한 장소를 추출합니다.
+		- 'ids' 파라미터로 전달된 장소 목록 중에서 분위기와 가장 유사한 장소를 추출합니다.
 		
 		
 		[mood 설명]
@@ -41,9 +41,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		  - 접근성이 좋은
 		- mood 값은 자연어 그대로 전달하면 됩니다. 예: mood="리뷰가 좋은"
 		
-		[예시]
-		- '리뷰가 좋은 주차장을 추천해줘' → similaritySearch(mood="리뷰가 좋은", ids=[...])
-		- '조용하고 쾌적한 주차장' → similaritySearch(mood="조용하고 쾌적한", ids=[...])
+
 		
 		요청에 맞는 툴을 위 형식대로 호출해 주세요.
 		""";

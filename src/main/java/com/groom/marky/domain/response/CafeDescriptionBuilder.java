@@ -4,20 +4,21 @@ import com.groom.marky.common.constant.GooglePlaceType;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RestaruantDescriptionBuilder implements DescriptionBuilder {
+public class CafeDescriptionBuilder implements DescriptionBuilder {
 
     @Override
     public String buildDescription(GooglePlacesApiResponse.Place place) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(place.displayName().text()).append("은(는) ")
-                .append(place.formattedAddress()).append("에 위치한 장소로, ")
-                .append("평점은 ").append(place.rating()).append("점이며, ");
+                .append(place.formattedAddress()).append("에 위치한 장소로, ");
         if(place.userRatingCount()==0){
             sb.append("등록된 리뷰가 없습니다. \n\n");
         }
         else {
-            sb.append("총 ").append(place.userRatingCount()).append("개의 리뷰가 있습니다.\n\n");
+
+            sb.append("평점은 ").append(place.rating()).append("점이며, ")
+            .append("총 ").append(place.userRatingCount()).append("개의 리뷰가 있습니다.\n\n");
         }
         // 오픈시간 클로즈시간
 
