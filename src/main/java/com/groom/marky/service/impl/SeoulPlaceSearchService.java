@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.groom.marky.domain.response.GooglePlacesApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -51,5 +52,8 @@ public class SeoulPlaceSearchService {
 		return kakaoPlaceSearchService.getRects(seoulBoxes, PK6);
 	}
 
+	public List<GooglePlacesApiResponse.Place> getActivityRects(String keyword) {
+		return kakaoPlaceSearchService.getRects(seoulBoxes, keyword);
+	}
 }
 

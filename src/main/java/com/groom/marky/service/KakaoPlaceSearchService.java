@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.groom.marky.domain.request.Rectangle;
 import com.groom.marky.common.constant.KakaoMapCategoryGroupCode;
+import com.groom.marky.domain.response.GooglePlacesApiResponse;
 
 public interface KakaoPlaceSearchService {
 
@@ -13,6 +14,8 @@ public interface KakaoPlaceSearchService {
 
 	// 사각형 내에 존재하는 특정 카테고리 토탈 카운트
 	int getTotalCount(String rect, KakaoMapCategoryGroupCode code);
+
+	int getTotalCount(String rect, String keyword);
 
 	// 카테고리 검색
 	Map<String, String> search(String rect, KakaoMapCategoryGroupCode code);
@@ -24,4 +27,6 @@ public interface KakaoPlaceSearchService {
 	Map<String, String> search(String rect, String keyword);
 
 	Set<Rectangle> getRects(List<Rectangle> boxes, KakaoMapCategoryGroupCode categoryGroupCode);
+
+	List<GooglePlacesApiResponse.Place> getRects(List<Rectangle> boxes, String keyword);
 }

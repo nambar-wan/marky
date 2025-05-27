@@ -4,6 +4,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -140,6 +141,49 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		return new GooglePlacesApiResponse(places, null);
 	}
 
+	@Override
+	public List<GooglePlacesApiResponse.Place> search(String text, Set<Rectangle> rects) {
+
+		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();
+
+		for (Rectangle rect : rects) {
+			String nextPageToken = null;
+
+			PlacesTextRequest request = buildRequest(text, rect, nextPageToken);
+
+			// 헤더 세팅
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			headers.set("X-Goog-FieldMask", TEXT_FIELD_HEADER);
+			headers.set("X-Goog-Api-Key", apiKey);
+
+			// 요청 생성
+			HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
+
+			GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
+					GooglePlacesApiResponse.class).getBody();
+
+			// 응답 담기
+			if (response != null && response.places() != null) {
+				places.addAll(response.places());
+				nextPageToken = response.nextPageToken();
+			}
+
+			while (nextPageToken != null) {
+				request = buildRequest(text, rect, nextPageToken);
+				httpEntity = new HttpEntity<>(request, headers);
+				response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
+						GooglePlacesApiResponse.class).getBody();
+
+				if (response != null && response.places() != null) {
+					places.addAll(response.places());
+					nextPageToken = response.nextPageToken();
+				}
+			}
+		}
+		return places;
+	}
+
 	private static PlacesTextRequest buildRequest(String text, GooglePlaceType type, LocationRestriction restriction,
 		String pageToken) {
 		return PlacesTextRequest.builder()
@@ -150,6 +194,16 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 			.regionCode(REGION_CODE)
 			.locationRestriction(restriction)
 			.build();
+	}
+
+	private static PlacesTextRequest buildRequest(String text, LocationRestriction restriction, String pageToken) {
+		return PlacesTextRequest.builder()
+				.pageToken(pageToken)
+				.textQuery(text)
+				.languageCode(LANGUAGE_CODE)
+				.regionCode(REGION_CODE)
+				.locationRestriction(restriction)
+				.build();
 	}
 
 	@Override
