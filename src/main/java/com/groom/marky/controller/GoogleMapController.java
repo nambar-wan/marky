@@ -20,6 +20,7 @@ import com.groom.marky.service.impl.SeoulPlaceSearchService;
 import com.groom.marky.service.impl.GooglePlaceSearchServiceImpl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
 @Controller
@@ -99,5 +100,13 @@ public class GoogleMapController {
 		GooglePlacesApiResponse response = googlePlaceSearchService.searchNearby(List.of("restaurant"), box);
 
 		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	@GetMapping("/activity")
+	public ResponseEntity<?> getActivity(@RequestParam("keyword") String keyword) {
+		List<GooglePlacesApiResponse.Place> activityBoxes = seoulPlaceSearchService.getActivityRects(keyword);
+		log.info("activityBoxes {}", activityBoxes.size());
+
+		return new ResponseEntity<>(activityBoxes, HttpStatus.OK);
 	}
 }

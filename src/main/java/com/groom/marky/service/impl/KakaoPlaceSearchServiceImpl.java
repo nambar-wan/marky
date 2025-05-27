@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.groom.marky.domain.response.GooglePlacesApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -41,6 +42,8 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	private final HttpEntity<Void> httpEntity;
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
+	private final GooglePlaceSearchServiceImpl googlePlaceSearchService;
+
 
 	private static final String KEYWORD_SEARCH_API_URI = "https://dapi.kakao.com/v2/local/search/keyword.json";
 	private static final String CATEGORY_SEARCH_API_URI = "https://dapi.kakao.com/v2/local/search/category.json";
@@ -49,13 +52,14 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 
 	@Autowired
 	public KakaoPlaceSearchServiceImpl(
-		RestTemplate restTemplate,
-		ObjectMapper objectMapper,
-		@Value("${KAKAO_REST_API_KEY}") String apiKey // 이렇게 주입하면 되는군
+            RestTemplate restTemplate,
+            ObjectMapper objectMapper,
+            @Value("${KAKAO_REST_API_KEY}") String apiKey, GooglePlaceSearchServiceImpl googlePlaceSearchService // 이렇게 주입하면 되는군
 	) {
 		this.restTemplate = restTemplate;
 		this.objectMapper = objectMapper;
 		this.apiKey = apiKey;
+        this.googlePlaceSearchService = googlePlaceSearchService;
 
 		// 한 번만 생성해서 재사용 가능한 final 필드로 초기화
 		HttpHeaders headers = new HttpHeaders();
@@ -193,14 +197,57 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		return result;
 	}
 
+	@Override
+	public List<GooglePlacesApiResponse.Place> getRects(List<Rectangle> rects, String keyword) {
+		Set<Rectangle> kakaoResult = new HashSet<>();
+		ArrayDeque<Rectangle> queue = new ArrayDeque<>(rects);
+
+		// 개별 박스 큐
+		while (!queue.isEmpty()) {
+			Rectangle rect = queue.poll();
+			int total = getTotalCount(rect.toString(), keyword);
+			log.info("rect : {}, total : {}", rect, total);
+
+			if (total == 0) {
+				continue;
+			}
+
+			if (total > 60) {
+				// 분리
+				queue.addAll(rect.splitGrid());
+				continue;
+			}
+
+			kakaoResult.add(rect);
+		}
+		// Use GooglePlacesApiResponse.Place instead of raw String
+		return googlePlaceSearchService.search(keyword, kakaoResult);
+	}
+
+	@Override
+	public int getTotalCount(String rect, String keyword) {
+
+		int result = 0;
+
+		try {
+			URI uri = buildKeywordUri(rect, keyword);
+			ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
+
+			JsonNode meta = objectMapper.readTree(response.getBody()).path("meta");
+			result = meta.path("total_count").asInt();
+			log.info("total_count : {}", result);
+		} catch (JsonProcessingException e) {
+			log.info("searchTotalParkingLotCountByRect 예외 발생 : {}", e.getMessage());
+		}
+		return result;
+	}
 
 
-
-	private static URI buildKeywordUri(int page, String keyword) {
+	private static URI buildKeywordUri(String rect, String keyword) {
 		return UriComponentsBuilder.fromUriString(KEYWORD_SEARCH_API_URI)
-			.queryParam("page", page)
-			.queryParam("size", 15)
-			.queryParam("sort", ACCURACY_SORT)
+			.queryParam("page", 1)
+			.queryParam("size", 1)
+			.queryParam("rect", rect)
 			.queryParam("query", keyword)
 			.encode(StandardCharsets.UTF_8)
 			.build().toUri();
