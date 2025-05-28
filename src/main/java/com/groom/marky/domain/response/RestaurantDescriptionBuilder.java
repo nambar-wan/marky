@@ -1,19 +1,34 @@
 package com.groom.marky.domain.response;
 
+import org.springframework.stereotype.Component;
+
 import com.groom.marky.common.constant.GooglePlaceType;
 
-public class RestaruantDescriptionBuilder implements DescriptionBuilder{
+@Component
+public class RestaurantDescriptionBuilder implements DescriptionBuilder{
 
 	@Override
 	public String buildDescription(GooglePlacesApiResponse.Place place) {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(place.displayName().text()).append("은(는) ")
-			.append(place.formattedAddress()).append("에 위치한 장소로, ")
-			.append("평점은 ").append(place.rating()).append("점이며, 총 ")
-			.append(place.userRatingCount()).append("개의 리뷰가 있습니다.\n\n");
+		if(place.userRatingCount() == 0) {
+			sb.append(place.displayName().text()).append("은(는) ")
+				.append(place.formattedAddress()).append("에 위치한 장소로, ")
+				.append("평점과 리뷰가 존재하지 않습니다.\n\n");
+		}
+		else {
+			sb.append(place.displayName().text()).append("은(는) ")
+				.append(place.formattedAddress()).append("에 위치한 장소로, ")
+				.append("평점은 ").append(place.rating()).append("점이며, 총 ")
+				.append(place.userRatingCount()).append("개의 리뷰가 있습니다.\n\n");
+		}
+		sb.append("[식당 종류]\n");
+		if(place.primaryTypeDisplayName() == null || place.primaryTypeDisplayName().text() == null) {
+			sb.append("- ").append("음식점").append("\n");
+		}
+		else sb.append("- ").append(place.primaryTypeDisplayName().text()).append("\n");
 
-		sb.append("[이용 정보]\n");
+		sb.append("\n[이용 정보]\n");
 		sb.append("- 점심 제공 여부: ").append(tf(place.servesLunch())).append("\n");
 		sb.append("- 저녁 제공 여부: ").append(tf(place.servesDinner())).append("\n");
 		sb.append("- 브런치 제공 여부: ").append(tf(place.servesBrunch())).append("\n");
@@ -39,20 +54,12 @@ public class RestaruantDescriptionBuilder implements DescriptionBuilder{
 		sb.append("- 라이브 음악 제공 여부: ").append(tf(place.liveMusic())).append("\n");
 		sb.append("- 어린이 메뉴 제공 여부: ").append(tf(place.menuForChildren())).append("\n");
 
-		sb.append("\n[결제 수단]\n");
-		if (place.paymentOptions() != null) {
-			sb.append("- 신용카드 사용: ").append(tf(place.paymentOptions().acceptsCreditCards())).append("\n");
-			sb.append("- 직불카드 사용: ").append(tf(place.paymentOptions().acceptsDebitCards())).append("\n");
-			sb.append("- 현금만 결제: ").append(tf(place.paymentOptions().acceptsCashOnly())).append("\n");
-		} else {
-			sb.append("- 결제 수단 정보 없음\n");
-		}
-
 		if (place.reviews() != null && !place.reviews().isEmpty()) {
 			sb.append("\n[리뷰]\n");
 			for (GooglePlacesApiResponse.Place.Review review : place.reviews()) {
 				if (review != null && review.text() != null && review.text().text() != null) {
-					sb.append("- ").append(review.text().text().replaceAll("\n", " ")).append("\n");
+					sb.append("- ").append(review.text().text().replaceAll("\u0000", "")
+						.replaceAll("\n", " ")).append("\n");
 				}
 			}
 		}

@@ -24,7 +24,15 @@ public class PlacesTextRequest {
 	private String textQuery;
 	private String languageCode;
 	private String regionCode;
-	private LocationRestriction locationRestriction; // rect, circle 넣으면 알아서 범위 지정 됩니다.
+	private RectangleWrapper locationRestriction;
+
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class RectangleWrapper {
+		private Rectangle rectangle;
+	}
 }
 
 
