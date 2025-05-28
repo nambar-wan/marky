@@ -3,6 +3,8 @@ package com.groom.marky.controller;
 import java.util.List;
 import java.util.Set;
 
+import com.groom.marky.domain.response.ActivityDescriptionBuilder;
+import com.groom.marky.service.impl.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +16,6 @@ import com.groom.marky.common.constant.GooglePlaceType;
 import com.groom.marky.domain.request.Rectangle;
 import com.groom.marky.domain.response.GooglePlacesApiResponse;
 import com.groom.marky.domain.response.ParkingLotDescriptionBuilder;
-import com.groom.marky.service.impl.EmbeddingService;
-import com.groom.marky.service.impl.RedisService;
-import com.groom.marky.service.impl.SeoulPlaceSearchService;
-import com.groom.marky.service.impl.GooglePlaceSearchServiceImpl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,18 +29,22 @@ public class GoogleMapController {
 	private final GooglePlaceSearchServiceImpl googlePlaceSearchService;
 	private final SeoulPlaceSearchService seoulPlaceSearchService;
 	private final EmbeddingService embeddingService;
+	private final ActivityEmbeddingService activityEmbeddingService;
 	private final ParkingLotDescriptionBuilder parkingLotDescriptionBuilder;
+	private final ActivityDescriptionBuilder activityDescriptionBuilder;
 	private final RedisService redisService;
 
 	@Autowired
 	public GoogleMapController(GooglePlaceSearchServiceImpl googlePlaceSearchService,
-		SeoulPlaceSearchService seoulPlaceSearchService, EmbeddingService embeddingService,
-		ParkingLotDescriptionBuilder parkingLotDescriptionBuilder, RedisService redisService) {
+                               SeoulPlaceSearchService seoulPlaceSearchService, EmbeddingService embeddingService, ActivityEmbeddingService activityEmbeddingService,
+                               ParkingLotDescriptionBuilder parkingLotDescriptionBuilder, ActivityDescriptionBuilder activityDescriptionBuilder, RedisService redisService) {
 		this.googlePlaceSearchService = googlePlaceSearchService;
 		this.seoulPlaceSearchService = seoulPlaceSearchService;
 		this.embeddingService = embeddingService;
-		this.parkingLotDescriptionBuilder = parkingLotDescriptionBuilder;
-		this.redisService = redisService;
+        this.activityEmbeddingService = activityEmbeddingService;
+        this.parkingLotDescriptionBuilder = parkingLotDescriptionBuilder;
+        this.activityDescriptionBuilder = activityDescriptionBuilder;
+        this.redisService = redisService;
 	}
 
 	@GetMapping("/load/parkinglot")
@@ -105,8 +107,7 @@ public class GoogleMapController {
 	@GetMapping("/activity")
 	public ResponseEntity<?> getActivity(@RequestParam("keyword") String keyword) {
 		GooglePlacesApiResponse response = seoulPlaceSearchService.getActivityRects(keyword);
-
-		embeddingService.saveEmbeddings(response, parkingLotDescriptionBuilder);
+		activityEmbeddingService.saveActivityEmbeddings(response, activityDescriptionBuilder, keyword);
 		redisService.setPlacesLocation(GooglePlaceType.ACTIVITY, response);
 
 		return new ResponseEntity<>(response, HttpStatus.OK);
