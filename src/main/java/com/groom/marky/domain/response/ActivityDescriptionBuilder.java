@@ -80,7 +80,7 @@ public class ActivityDescriptionBuilder implements DescriptionBuilder {
 
     @Override
     public String getType() {
-        return GooglePlaceType.PARKING.getGoogleType();
+        return GooglePlaceType.ACTIVITY.getGoogleType();
     }
 
     private static String tf(Boolean value) {
