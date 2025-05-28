@@ -198,7 +198,7 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	}
 
 	@Override
-	public List<GooglePlacesApiResponse.Place> getRects(List<Rectangle> rects, String keyword) {
+	public GooglePlacesApiResponse getRects(List<Rectangle> rects, String keyword) {
 		Set<Rectangle> kakaoResult = new HashSet<>();
 		ArrayDeque<Rectangle> queue = new ArrayDeque<>(rects);
 

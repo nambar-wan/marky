@@ -104,9 +104,9 @@ public class GoogleMapController {
 
 	@GetMapping("/activity")
 	public ResponseEntity<?> getActivity(@RequestParam("keyword") String keyword) {
-		List<GooglePlacesApiResponse.Place> activityBoxes = seoulPlaceSearchService.getActivityRects(keyword);
-		log.info("activityBoxes {}", activityBoxes.size());
+		GooglePlacesApiResponse response = seoulPlaceSearchService.getActivityRects(keyword);
+		redisService.setPlacesLocation(GooglePlaceType.PARKING, response);
 
-		return new ResponseEntity<>(activityBoxes, HttpStatus.OK);
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 }
