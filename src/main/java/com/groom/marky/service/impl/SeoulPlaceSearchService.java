@@ -21,6 +21,8 @@ public class SeoulPlaceSearchService {
 
 	private final KakaoPlaceSearchService kakaoPlaceSearchService;
 	private static final Rectangle seoulBox = Rectangle.rectOfSeoul();
+
+	// 서울을 10 X 10 으로 나눔
 	private static final List<Rectangle> seoulBoxes = seoulBox.generateGrid(10, 10);
 
 	@Autowired
@@ -45,10 +47,12 @@ public class SeoulPlaceSearchService {
 	}
 
 	public Set<Rectangle> getRestaurantRects() {
+
 		return kakaoPlaceSearchService.getRects(seoulBoxes, FD6);
 	}
 
 	public Set<Rectangle> getParkingLotRects() {
+
 		return kakaoPlaceSearchService.getRects(seoulBoxes, PK6);
 	}
 

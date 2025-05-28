@@ -31,12 +31,16 @@ import lombok.extern.slf4j.Slf4j;
 		log.info("[LocationResolverAdvisor] 진입");
 
 		String location = (String) request.context().get(LOCATION_KEY);
+
+
 		if (location == null || location.isBlank()) {
 			log.warn("location이 누락되어 LocationResolverAdvisor 스킵");
 			return chain.nextCall(request);
 		}
 
 		Map<String, Double> coord = tmapClient.getLatLon(location);
+
+
 		if (coord == null) {
 			log.warn("tmapClient 결과가 null → location: {}", location);
 			return chain.nextCall(request);

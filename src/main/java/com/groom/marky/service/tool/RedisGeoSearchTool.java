@@ -42,9 +42,9 @@ public class RedisGeoSearchTool {
 		log.info("[searchParkingLots Tool 호출] 위도 : {}, 경도 : {}", lat, lon);
 
 		String key = RedisKeyParser.getPlaceKey(GooglePlaceType.PARKING);
+		// place:parking
 
 		// 필요한건?? 근처 주차장 조회다..
-
 		return redisService.getNearbyPlacesId(key, lat, lon, 2);
 
 	}

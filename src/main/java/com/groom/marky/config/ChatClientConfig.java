@@ -3,6 +3,9 @@ package com.groom.marky.config;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
@@ -27,7 +30,17 @@ import com.groom.marky.service.tool.RedisGeoSearchTool;
 public class ChatClientConfig {
 
 	@Bean
+	public ChatMemory chatMemory() {
+		return MessageWindowChatMemory.builder()
+			.maxMessages(10)
+			.build();
+	}
+
+
+
+	@Bean
 	public ChatClient chatClient(
+		ChatMemory chatMemory,
 		ChatModel model,
 		SystemRoleAdvisor systemRoleAdvisor,
 		UserIntentAdvisor userIntentAdvisor,
@@ -47,7 +60,8 @@ public class ChatClientConfig {
 				systemRoleAdvisor,
 				userIntentAdvisor,
 				locationResolverAdvisor,
-				multiPurposeActionAdvisor
+				multiPurposeActionAdvisor,
+				MessageChatMemoryAdvisor.builder(chatMemory).build()
 			))
 			.build();
 	}

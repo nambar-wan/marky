@@ -41,7 +41,6 @@ public class EmbeddingService {
 				String description = descriptionBuilder.buildDescription(place);
 				String id = UUID.nameUUIDFromBytes(place.id().getBytes(StandardCharsets.UTF_8)).toString();
 
-
 				return new Document(
 					id,
 					description, // 자연어
