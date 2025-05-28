@@ -95,7 +95,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 	@Override
 	public GooglePlacesApiResponse search(String text, GooglePlaceType type, Rectangle rect) {
-		log.info("호출");
+		log.info("호출 rect : {}", rect.toString());
 
 		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();
 
@@ -184,7 +184,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		return places;
 	}
 
-	private static PlacesTextRequest buildRequest(String text, GooglePlaceType type, LocationRestriction restriction,
+	private static PlacesTextRequest buildRequest(String text, GooglePlaceType type, Rectangle rect,
 		String pageToken) {
 		return PlacesTextRequest.builder()
 			.pageToken(pageToken)
@@ -192,17 +192,17 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 			.textQuery(text)
 			.languageCode(LANGUAGE_CODE)
 			.regionCode(REGION_CODE)
-			.locationRestriction(restriction)
+			.locationRestriction(new PlacesTextRequest.RectangleWrapper(rect))
 			.build();
 	}
 
-	private static PlacesTextRequest buildRequest(String text, LocationRestriction restriction, String pageToken) {
+	private static PlacesTextRequest buildRequest(String text, Rectangle rect, String pageToken) {
 		return PlacesTextRequest.builder()
 				.pageToken(pageToken)
 				.textQuery(text)
 				.languageCode(LANGUAGE_CODE)
 				.regionCode(REGION_CODE)
-				.locationRestriction(restriction)
+				.locationRestriction(new PlacesTextRequest.RectangleWrapper(rect))
 				.build();
 	}
 

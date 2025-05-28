@@ -2,7 +2,11 @@ package com.groom.marky.service.impl;
 
 import static com.groom.marky.domain.response.GooglePlacesApiResponse.*;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.Circle;
@@ -16,14 +20,21 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.domain.geo.Metrics;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groom.marky.common.RedisKeyParser;
 import com.groom.marky.common.constant.GooglePlaceType;
+import com.groom.marky.domain.request.Rectangle;
 import com.groom.marky.domain.response.GooglePlacesApiResponse;
 
 @Service
 public class RedisService {
 
 	private final StringRedisTemplate redisTemplate;
+	private static final String RESTAURANT_RECT_ALL_KEY = "place:restaurant:rects:all";
+	private static final String RESTAURANT_RECT_PROCESSED_KEY = "place:restaurant:rects:processed";
+	private static final String OVER_LENGTH_PLACE_KEY = "place:overlength";
 
 	@Autowired
 	public RedisService(StringRedisTemplate redisTemplate) {
@@ -55,5 +66,36 @@ public class RedisService {
 			.map(GeoResult::getContent)
 			.map(RedisGeoCommands.GeoLocation::getName)
 			.toList();
+	}
+
+	public void markRectangleAsProcessed(Rectangle rect) {
+		redisTemplate.opsForSet().add(RESTAURANT_RECT_PROCESSED_KEY, rect.toString());
+	}
+
+	public void markPlaceAsOverLength(Place place) {
+		redisTemplate.opsForSet().add(OVER_LENGTH_PLACE_KEY, place.id());
+	}
+
+	public void saveAllRects(Set<Rectangle> rects) throws JsonProcessingException {
+		ObjectMapper mapper = new ObjectMapper();
+		String json = mapper.writeValueAsString(rects);
+		redisTemplate.opsForValue().set(RESTAURANT_RECT_ALL_KEY, json);
+	}
+
+	public Set<Rectangle> loadAllRects() throws JsonProcessingException {
+		String json = redisTemplate.opsForValue().get(RESTAURANT_RECT_ALL_KEY);
+		if (json == null) return Set.of();
+
+		ObjectMapper mapper = new ObjectMapper();
+		Set<Rectangle> allRects = mapper.readValue(json, new TypeReference<Set<Rectangle>>() {});
+
+		// 처리된 rect들
+		Set<String> processedRectStrings = Optional.ofNullable(
+			redisTemplate.opsForSet().members(RESTAURANT_RECT_PROCESSED_KEY)).orElse(Collections.emptySet());
+
+		// 아직 처리되지 않은 것만 필터링
+		return allRects.stream()
+			.filter(rect -> !processedRectStrings.contains(rect.toString()))
+			.collect(Collectors.toSet());
 	}
 }

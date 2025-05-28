@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,7 +36,6 @@ public class ChatClientConfig {
 		PlaceVectorSearchTool placeVectorSearchTool,
 		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
 
-		//
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool))
 			.internalToolExecutionEnabled(true)
