@@ -1,5 +1,6 @@
 package com.groom.marky.controller;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -92,40 +93,54 @@ public class GoogleMapController {
 
     @GetMapping("/load/cafe")
     public ResponseEntity<?> embeddingCafe() {
+        boolean sampling = true; // 샘플링
+                            //false; // 서울 전체
+        if(sampling) {
+            // kakao cafe 57
+            double lat1 = 37.55855401875;
+            double lon1 = 126.827750375;
+            double lat2 = 37.5604405125;
+            double lon2 = 126.83109553125;
+            Rectangle box = new Rectangle(lon1, lat1, lon2, lat2);
 
-        // kakao cafe 57
-        double lat1 = 37.55855401875;
-        double lon1 = 126.827750375;
-        double lat2 = 37.5604405125;
-        double lon2 = 126.83109553125;
-        Rectangle box = new Rectangle(lon1,lat1,lon2,lat2);
+            log.info("카페 탐색: ({}, {}) ~ ({}, {})",
+                    box.getLow().getLatitude(),
+                    box.getLow().getLongitude(),
+                    box.getHigh().getLatitude(),
+                    box.getHigh().getLongitude());
 
-        log.info("카페 탐색: ({}, {}) ~ ({}, {})", lat1, lon1, lat2, lon2);
-        //	Set<Rectangle> parkingLotRects = seoulPlaceSearchService.getParkingLotRects();
-        GooglePlacesApiResponse response =
-                googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
-        log.info("구글 장소 검색 완료");
-        embeddingService.saveEmbeddings(response, cafeDescriptionBuilder);
-        log.info("임베딩 완료");
-        redisService.setPlacesLocation(GooglePlaceType.CAFE, response);
-        log.info("좌표값 레디스 저장");
+            GooglePlacesApiResponse response =
+                    googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
+            log.info("구글 장소 검색 완료");
+            embeddingService.saveEmbeddings(response, cafeDescriptionBuilder);
+            log.info("임베딩 완료");
+            redisService.setPlacesLocation(GooglePlaceType.CAFE, response);
+            log.info("좌표값 레디스 저장");
+        }
+        else {
+            Set<Rectangle> cafeBoxes = seoulPlaceSearchService.getCafeRects();
+            Iterator<Rectangle> iterator = cafeBoxes.iterator();
 
+            while (iterator.hasNext()) {
+                Rectangle box = iterator.next();
 
-	/*	for (Rectangle rect : parkingLotRects) {
-			GooglePlacesApiResponse response =
-				googlePlaceSearchService.search(PARKING_LOT_KEYWORD, GooglePlaceType.PARKING, rect);
+                log.info("카페 탐색: ({}, {}) ~ ({}, {})",
+                        box.getLow().getLatitude(),
+                        box.getLow().getLongitude(),
+                        box.getHigh().getLatitude(),
+                        box.getHigh().getLongitude());
 
-			int placeCount = response.places().size();
+                GooglePlacesApiResponse response =
+                        googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
+                log.info("구글 장소 검색 완료");
+                embeddingService.saveEmbeddings(response, cafeDescriptionBuilder);
+                log.info("임베딩 완료");
+                redisService.setPlacesLocation(GooglePlaceType.CAFE, response);
+                log.info("좌표값 레디스 저장");
 
-			if (placeCount == 0) {
-				continue;
-			}
-
-
-			embeddingService.saveEmbeddings(response, parkingLotDescriptionBuilder);
-			redisService.setPlacesLocation(GooglePlaceType.PARKING, response);
-		}*/
-
+                iterator.remove();
+            }
+        }
         log.info("카페 임베딩 완료");
 
         return new ResponseEntity<>(HttpStatus.OK);

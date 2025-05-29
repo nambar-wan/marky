@@ -11,18 +11,17 @@ public class CafeDescriptionBuilder implements DescriptionBuilder {
         StringBuilder sb = new StringBuilder();
 
         sb.append(place.displayName().text()).append("은(는) ")
-                .append(place.formattedAddress()).append("에 위치한 장소로, ");
+                .append(place.formattedAddress()).append("에 위치한 카페로, \n");
         if(place.userRatingCount()==0){
-            sb.append("등록된 리뷰가 없습니다. \n\n");
+            sb.append("아직까지 등록된 리뷰가 없습니다. \n\n");
         }
         else {
-
             sb.append("평점은 ").append(place.rating()).append("점이며, ")
             .append("총 ").append(place.userRatingCount()).append("개의 리뷰가 있습니다.\n");
-            if(place.userRatingCount()>=4.5){sb.append("이용자들의 평가가 매우 좋습니다.");}
-            else if(place.userRatingCount() >= 4.0) {sb.append("이용자들의 평가가 좋습니다.");}
-            else if(place.userRatingCount() >= 3.5) {sb.append("이용자들의 평가가 양호합니다.");}
-            else if(place.userRatingCount() >= 3.0) {sb.append("이용자들의 평가가 그저그렇습니다.");}
+            if(place.rating()>=4.5){sb.append("이용자들의 평가가 매우 좋습니다.\n\n");}
+            else if(place.rating() >= 4.0) {sb.append("이용자들의 평가가 좋습니다.\n\n");}
+            else if(place.rating() >= 3.5) {sb.append("이용자들의 평가가 양호합니다.\n\n");}
+            else if(place.rating() >= 3.0) {sb.append("이용자들의 평가가 그저그렇습니다.\n\n");}
             else sb.append("이용자들의 평가가 안좋습니다.\n\n");
         }
         // 오픈시간 클로즈시간

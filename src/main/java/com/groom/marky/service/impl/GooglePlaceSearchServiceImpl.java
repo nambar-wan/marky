@@ -28,6 +28,8 @@ import com.groom.marky.service.GooglePlaceSearchService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.groom.marky.controller.GoogleMapController.CAFE_KEYWORD;
+
 @Slf4j
 @Service
 public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
@@ -151,6 +153,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		// 여기서 응답을 만들어야 함.
 		return new GooglePlacesApiResponse(places, null);
 	}
+
 
 	@Override
 	public List<GooglePlacesApiResponse.Place> search(String text, Set<Rectangle> rects) {
