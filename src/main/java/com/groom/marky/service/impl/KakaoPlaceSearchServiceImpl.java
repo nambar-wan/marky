@@ -157,23 +157,26 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	 */
 	@Override
 	public Map<String, Double> search(String keyword) {
-
 		HashMap<String, Double> result = new HashMap<>();
-		URI uri = buildKeywordUri(keyword);
-		JsonNode documents = null;
 
-		ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
-		log.info("response : {}", response);
+		try {
+			URI uri = buildKeywordUri(keyword);
 
+			ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
 
-		JsonNode firstNode = documents.get(0);
-		JsonNode lat = firstNode.get("y");
-		JsonNode lon = firstNode.get("x");
+			String body = response.getBody();
+			JsonNode root = objectMapper.readTree(body);
+			JsonNode documents = root.path("documents");
+			JsonNode firstNode = documents.get(0);
 
-		result.put("lat", Double.parseDouble(lat.textValue()));
-		result.put("lon", Double.parseDouble(lon.textValue()));
+			result.put("lat", Double.parseDouble(firstNode.get("y").textValue()));
+			result.put("lon", Double.parseDouble(firstNode.get("x").textValue()));
 
+		} catch (Exception e) {
+			log.info("[KakaoPlaceSearchServiceImpl] search 예외 발생  keyword : {}, message : {} ", keyword, e.getMessage());
+		}
 		return result;
+
 	}
 
 	@Override

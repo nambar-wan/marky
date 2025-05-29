@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.groom.marky.common.TmapGeocodingClient;
 import com.groom.marky.common.TmapTransitClient;
+import com.groom.marky.service.KakaoPlaceSearchService;
 import com.groom.marky.service.advisor.LocationResolverAdvisor;
 import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SubwayRouteAdvisor;
@@ -35,8 +36,6 @@ public class ChatClientConfig {
 			.maxMessages(10)
 			.build();
 	}
-
-
 
 	@Bean
 	public ChatClient chatClient(
@@ -96,8 +95,8 @@ public class ChatClientConfig {
 	}
 
 	@Bean
-	public LocationResolverAdvisor locationResolverAdvisor(TmapGeocodingClient tmapGeocodingClient) {
-		return new LocationResolverAdvisor(tmapGeocodingClient);
+	public LocationResolverAdvisor locationResolverAdvisor(KakaoPlaceSearchService kakaoPlaceSearchService) {
+		return new LocationResolverAdvisor(kakaoPlaceSearchService);
 	}
 
 	@Bean
