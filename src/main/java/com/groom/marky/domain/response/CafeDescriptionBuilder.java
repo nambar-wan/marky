@@ -57,6 +57,17 @@ public class CafeDescriptionBuilder implements DescriptionBuilder {
         sb.append("- 라이브 음악 제공 여부: ").append(tf(place.liveMusic())).append("\n");
         sb.append("- 어린이 메뉴 제공 여부: ").append(tf(place.menuForChildren())).append("\n");
 
+        sb.append("\n[주차 제공]\n");
+        if(place.parkingOptions() != null) {
+            sb.append("- 무료 주차장: ").append(tf(place.parkingOptions().freeParkingLot())).append("\n");
+            sb.append("- 유료 주차장: ").append(tf(place.parkingOptions().paidParkingLot())).append("\n");
+            sb.append("- 무료 노상 주차: ").append(tf(place.parkingOptions().freeStreetParking())).append("\n");
+            sb.append("- 발레파킹: ").append(tf(place.parkingOptions().valetParking())).append("\n");
+            sb.append("- 무료 실내 주차: ").append(tf(place.parkingOptions().freeGarageParking())).append("\n");
+            sb.append("- 유료 실내 주차: ").append(tf(place.parkingOptions().paidGarageParking())).append("\n\n");
+        }
+        else sb.append("- 주차 정보 없음 \n\n");
+
         sb.append("\n[결제 수단]\n");
         if (place.paymentOptions() != null) {
             sb.append("- 신용카드 사용: ").append(tf(place.paymentOptions().acceptsCreditCards())).append("\n");

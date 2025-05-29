@@ -15,7 +15,8 @@ public record GooglePlacesApiResponse(List<Place> places, String nextPageToken) 
 						Boolean servesLunch, Boolean servesVegetarianFood, Boolean servesWine, Boolean takeout,
 
 						// Nested object for paymentOptions
-						PaymentOptions paymentOptions, ParkingOptions parkingOptions
+						PaymentOptions paymentOptions
+						, ParkingOptions parkingOptions
 
 						){
 		public record Location(double latitude, double longitude) {
