@@ -78,7 +78,14 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		"places.servesWine",
 		"places.takeout",
 
-		"places.weekdayDescriptions"
+		"places.regularOpeningHours.weekdayDescriptions",
+		"places.parkingOptions.freeParkingLot",
+		"places.parkingOptions.paidParkingLot",
+		"places.parkingOptions.freeStreetParking",
+		"places.parkingOptions.paidStreetParking",
+		"places.parkingOptions.valetParking",
+		"places.parkingOptions.freeGarageParking",
+		"places.parkingOptions.paidGarageParking"
 	);
 
 	private String apiKey;
@@ -99,7 +106,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 	public GooglePlacesApiResponse search(String text, GooglePlaceType type, Rectangle rect) {
 
 		// 카페, 카페타입, 범위
-		log.info("호출");
+		log.info("search 호출");
 
 		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();
 
@@ -112,12 +119,12 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		headers.set("X-Goog-FieldMask", TEXT_FIELD_HEADER);
 		headers.set("X-Goog-Api-Key", apiKey);
 
-		// 요청 생성
+		// 요청 생성 (여기서 에러뜸)
 		HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
-
 		GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST,
 			httpEntity,
 			GooglePlacesApiResponse.class).getBody();
+
 
 		// 응답 담기
 		if (response != null && response.places() != null) {

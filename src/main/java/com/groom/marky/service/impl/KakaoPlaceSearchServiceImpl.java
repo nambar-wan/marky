@@ -54,7 +54,8 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	public KakaoPlaceSearchServiceImpl(
             RestTemplate restTemplate,
             ObjectMapper objectMapper,
-            @Value("${KAKAO_REST_API_KEY}") String apiKey, GooglePlaceSearchServiceImpl googlePlaceSearchService // 이렇게 주입하면 되는군
+            @Value("${KAKAO_REST_API_KEY}") String apiKey,
+			GooglePlaceSearchServiceImpl googlePlaceSearchService // 이렇게 주입하면 되는군
 	) {
 		this.restTemplate = restTemplate;
 		this.objectMapper = objectMapper;
@@ -225,6 +226,32 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	}
 
 	@Override
+	public Map<Rectangle, Integer> getRectsMap(List<Rectangle> rects, KakaoMapCategoryGroupCode code){
+		Map<Rectangle, Integer> result = new HashMap<>();
+		ArrayDeque<Rectangle> queue = new ArrayDeque<>(rects);
+
+		// 개별 박스 큐
+		while (!queue.isEmpty()) {
+			Rectangle rect = queue.poll();
+			int total = getTotalCount(rect.toString(), code);
+
+			if (total == 0) {
+				continue;
+			}
+
+			if (total > 60) {
+				// 분리
+				queue.addAll(rect.splitGrid());
+				continue;
+			}
+
+			log.info("rect : {}, total : {}", rect, total);
+			result.put(rect, total);
+		}
+		return result;
+	}
+
+	@Override
 	public int getTotalCount(String rect, String keyword) {
 
 		int result = 0;
@@ -275,6 +302,7 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 			.encode(StandardCharsets.UTF_8)
 			.build().toUri();
 	}
+
 
 }
 

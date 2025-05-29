@@ -4,7 +4,7 @@ import java.util.List;
 
 public record GooglePlacesApiResponse(List<Place> places, String nextPageToken) {
 	public record Place(String id, List<String> types, String formattedAddress, Location location, double rating,
-						int userRatingCount, DisplayName displayName, List<Review> reviews, String weekdayDescriptions,
+						int userRatingCount, DisplayName displayName, List<Review> reviews,
 
 						// Optional Boolean Fields
 						Boolean allowsDogs, Boolean curbsidePickup, Boolean delivery, Boolean dineIn,
@@ -15,7 +15,9 @@ public record GooglePlacesApiResponse(List<Place> places, String nextPageToken) 
 						Boolean servesLunch, Boolean servesVegetarianFood, Boolean servesWine, Boolean takeout,
 
 						// Nested object for paymentOptions
-						PaymentOptions paymentOptions, ParkingOptions parkingOptions) {
+						PaymentOptions paymentOptions, ParkingOptions parkingOptions
+
+						){
 		public record Location(double latitude, double longitude) {
 		}
 

@@ -3,6 +3,7 @@ package com.groom.marky.controller;
 import java.util.List;
 import java.util.Set;
 
+import com.groom.marky.domain.response.CafeDescriptionBuilder;
 import com.groom.marky.domain.response.RestaruantDescriptionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,15 +36,17 @@ public class GoogleMapController {
     private final EmbeddingService embeddingService;
     private final ParkingLotDescriptionBuilder parkingLotDescriptionBuilder;
     private final RestaruantDescriptionBuilder restaruantDescriptionBuilder;
+    private final CafeDescriptionBuilder cafeDescriptionBuilder;
     private final RedisService redisService;
 
     @Autowired
-    public GoogleMapController(GooglePlaceSearchServiceImpl googlePlaceSearchService, SeoulPlaceSearchService seoulPlaceSearchService, EmbeddingService embeddingService, ParkingLotDescriptionBuilder parkingLotDescriptionBuilder, RestaruantDescriptionBuilder restaruantDescriptionBuilder, RedisService redisService) {
+    public GoogleMapController(GooglePlaceSearchServiceImpl googlePlaceSearchService, SeoulPlaceSearchService seoulPlaceSearchService, EmbeddingService embeddingService, ParkingLotDescriptionBuilder parkingLotDescriptionBuilder, RestaruantDescriptionBuilder restaruantDescriptionBuilder, CafeDescriptionBuilder cafeDescriptionBuilder, RedisService redisService) {
         this.googlePlaceSearchService = googlePlaceSearchService;
         this.seoulPlaceSearchService = seoulPlaceSearchService;
         this.embeddingService = embeddingService;
         this.parkingLotDescriptionBuilder = parkingLotDescriptionBuilder;
         this.restaruantDescriptionBuilder = restaruantDescriptionBuilder;
+        this.cafeDescriptionBuilder = cafeDescriptionBuilder;
         this.redisService = redisService;
     }
 
@@ -91,19 +94,21 @@ public class GoogleMapController {
     public ResponseEntity<?> embeddingCafe() {
 
         // kakao cafe 57
-        Rectangle box = new Rectangle(
-                127.0016985,
-                37.684949100000004,
-                127.055221,
-                37.715133);
+        double lat1 = 37.55855401875;
+        double lon1 = 126.827750375;
+        double lat2 = 37.5604405125;
+        double lon2 = 126.83109553125;
+        Rectangle box = new Rectangle(lon1,lat1,lon2,lat2);
 
+        log.info("카페 탐색: ({}, {}) ~ ({}, {})", lat1, lon1, lat2, lon2);
         //	Set<Rectangle> parkingLotRects = seoulPlaceSearchService.getParkingLotRects();
         GooglePlacesApiResponse response =
                 googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
-
-        embeddingService.saveEmbeddings(response, restaruantDescriptionBuilder);
+        log.info("구글 장소 검색 완료");
+        embeddingService.saveEmbeddings(response, cafeDescriptionBuilder);
+        log.info("임베딩 완료");
         redisService.setPlacesLocation(GooglePlaceType.CAFE, response);
-
+        log.info("좌표값 레디스 저장");
 
 
 	/*	for (Rectangle rect : parkingLotRects) {
@@ -121,7 +126,7 @@ public class GoogleMapController {
 			redisService.setPlacesLocation(GooglePlaceType.PARKING, response);
 		}*/
 
-        log.info("임베딩 완료");
+        log.info("카페 임베딩 완료");
 
         return new ResponseEntity<>(HttpStatus.OK);
     }

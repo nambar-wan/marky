@@ -28,5 +28,7 @@ public interface KakaoPlaceSearchService {
 
 	Set<Rectangle> getRects(List<Rectangle> boxes, KakaoMapCategoryGroupCode categoryGroupCode);
 
+	Map<Rectangle, Integer> getRectsMap(List<Rectangle> rects, KakaoMapCategoryGroupCode code);
+
 	List<GooglePlacesApiResponse.Place> getRects(List<Rectangle> boxes, String keyword);
 }

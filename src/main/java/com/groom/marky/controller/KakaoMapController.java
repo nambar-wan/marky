@@ -1,5 +1,7 @@
 package com.groom.marky.controller;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,15 @@ public class KakaoMapController {
 	public ResponseEntity<?> searchCafes() {
 		// 박스 받아서 박스 범위 내의 카페 조회
 		Set<Rectangle> cafeBoxes = seoulPlaceSearchService.getCafeRects();
+		log.info("cafeBoxes {}", cafeBoxes.size());
+
+		return new ResponseEntity<>(cafeBoxes, HttpStatus.OK);
+	}
+
+	@GetMapping("/cafe/map")
+	public ResponseEntity<?> searchCafeMap() {
+		// 박스 범위 내의 카페 맵으로 전달
+		Map<Rectangle, Integer> cafeBoxes = seoulPlaceSearchService.getCafeRectsMap();
 		log.info("cafeBoxes {}", cafeBoxes.size());
 
 		return new ResponseEntity<>(cafeBoxes, HttpStatus.OK);

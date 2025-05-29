@@ -21,8 +21,8 @@ public class RestaruantDescriptionBuilder implements DescriptionBuilder {
         }
         // 오픈시간 클로즈시간
 
-        sb.append("[이용 시간]\n");
-        sb.append(place.weekdayDescriptions()).append("\n\n");
+//        sb.append("[이용 시간]\n");
+//        sb.append(place.weekdayDescriptions()).append("\n\n");
 
 
         sb.append("[이용 정보]\n");
