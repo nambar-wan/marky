@@ -67,7 +67,8 @@ public enum GooglePlaceType {
 	POST_OFFICE("post_office", "우체국"),
 	HOSPITAL("hospital", "병원"),
 	PHARMACY("pharmacy", "약국"),
-	DOCTOR("doctor", "병원(의사)");
+	DOCTOR("doctor", "병원(의사)"),
+	ACTIVITY("activity", "액티비티");
 
 	private final String googleType;
 	private final String description;
