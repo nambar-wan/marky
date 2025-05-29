@@ -7,7 +7,6 @@ import com.groom.marky.service.tool.ActivitySearchTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,7 +35,6 @@ public class ChatClientConfig {
 		ActivitySearchTool activitySearchTool,
 		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
 
-		//
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,activitySearchTool))
 			.internalToolExecutionEnabled(true)
