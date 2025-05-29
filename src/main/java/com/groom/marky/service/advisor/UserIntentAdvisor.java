@@ -29,6 +29,11 @@ public class UserIntentAdvisor implements CallAdvisor {
 	private static final String INTENT_KEY = "intent";
 	private static final String LOCATION_KEY = "location";
 	private static final String MOOD_KEY = "mood";
+	private static final String ORIGIN = "origin";
+	private static final String DESTINATION = "destination";
+	private static final String TIME_SLOT = "timeSlot";
+	private static final String DAY_TYPE = "dayType";
+
 
 	@Autowired
 	public UserIntentAdvisor(ChatModel chatModel, ObjectMapper objectMapper) {
@@ -50,7 +55,7 @@ public class UserIntentAdvisor implements CallAdvisor {
 			new SystemMessage("""
 					다음 사용자 입력에서 intent, location, mood를 JSON 형식으로 정확히 추출해줘.
 				
-					- intent: 사용자의 목적 (예: 주차장, 카페, 식당, 놀거리 등)
+					- intent: 사용자의 목적 (예: 주차장, 카페, 식당, 놀거리, 경로, 지하철 등)
 					- location: 장소명 또는 지역명 (예: 연남동, 홍대입구역, 마포구 등)
 					- mood: 분위기, 선호 조건, 상황 (예: 조용한, 디저트가 맛있는, 공부하기 좋은, 감성적인 등)
 				
@@ -59,6 +64,16 @@ public class UserIntentAdvisor implements CallAdvisor {
 					- 분위기: 조용한, 분위기 좋은, 감성적인, 트렌디한 등
 					- 목적/상황: 공부하기 좋은, 연인과 가기 좋은, 아이와 가기 좋은 등
 					- 편의 조건: 주차 가능한, 테이크아웃 가능, 콘센트 있는 등
+					
+					[경로 요청 처리]
+					- 사용자가 "A역에서 B역까지 가는 법", "A~B 지하철 경로", "A역에서 B역까지 지하철 경로 알려줘", "몇시 요일 A역에서 B역까지 지하철 경로 알려줘"등을 말하면
+					- intent : "경로"
+					- mood는 비워두고 "" 처리해줘.
+					- intent가 "경로"라면 출발지를 유추해서 origin 키로,  도착지를 유추해서 destination 키로 저장해줘.
+					- intent: "경로"면 location은 빈값으로 넣어줘
+					- timeSlot: "시간"
+					- dayType: "요일"
+					 
 				
 					[위치 정규화 안내]
 					- 사용자가 "근처", "주변", "가까운", "인근" 등의 표현을 사용하면,
@@ -71,6 +86,8 @@ public class UserIntentAdvisor implements CallAdvisor {
 				
 					출력 예시:
 					{ "intent": "식당", "location": "합정역", "mood": "조용하고 분위기 좋은" }
+					{ "intent": "경로", "location": "", "origin": "강남역", "destination": "역삼역", "mood": ""}
+					
 				
 					반드시 JSON만 출력하고, 설명은 포함하지 마.
 					너는 툴 콜링을 사용하면 안돼.
@@ -91,14 +108,22 @@ public class UserIntentAdvisor implements CallAdvisor {
 			String intent = extracted.get(INTENT_KEY);
 			String location = extracted.get(LOCATION_KEY);
 			String mood = extracted.get(MOOD_KEY);
+			String origin = extracted.get(ORIGIN);
+			String destination = extracted.get(DESTINATION);
+			String timeSlot = extracted.get(TIME_SLOT);
+			String dayType = extracted.get(DAY_TYPE);
 
-			log.info("[UserIntentAdvisor] 의도: {}, 장소: {}, 분위기: {}", intent, location, mood);
+			log.info("[UserIntentAdvisor] 의도: {}, 장소: {}, 분위기: {}, 출발지 : {}, 목적지 : {}" , intent, location, mood, origin, destination);
 
 
 			ChatClientRequest modified = request.mutate()
 				.context(INTENT_KEY, intent)
 				.context(LOCATION_KEY, location)
 				.context(MOOD_KEY, mood)
+				.context(ORIGIN,origin)
+				.context(DESTINATION,destination)
+				.context(TIME_SLOT,timeSlot)
+				.context(DAY_TYPE,dayType)
 				.build();
 
 			return chain.nextCall(modified);

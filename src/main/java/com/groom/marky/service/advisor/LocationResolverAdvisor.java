@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 
 		log.info("[LocationResolverAdvisor] 진입");
 
+		String intent = (String) request.context().get("intent"); // **
 		String location = (String) request.context().get(LOCATION_KEY);
 
 
