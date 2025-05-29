@@ -5,8 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(
 	use = JsonTypeInfo.Id.NAME,
-	include = JsonTypeInfo.As.WRAPPER_OBJECT,
-	property = ""
+	include = JsonTypeInfo.As.WRAPPER_OBJECT
 )
 @JsonSubTypes({
 	@JsonSubTypes.Type(value = Rectangle.class, name = "rectangle"),

@@ -23,8 +23,9 @@ public interface KakaoPlaceSearchService {
 	// 범위 내 특정 카테고리를 가진 모든 장소 반환
 	Map<String, String> searchAll(List<Rectangle> boxes, KakaoMapCategoryGroupCode code);
 
-	// 키워드 검색
-	Map<String, String> search(String rect, String keyword);
+	// 키워드 검색, 첫번째 응답값의  위경도 반환
+	Map<String, Double> search(String keyword);
+
 
 	Set<Rectangle> getRects(List<Rectangle> boxes, KakaoMapCategoryGroupCode categoryGroupCode);
 
