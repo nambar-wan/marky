@@ -56,7 +56,7 @@ public class SeoulPlaceSearchService {
 		return kakaoPlaceSearchService.getRects(seoulBoxes, PK6);
 	}
 
-	public List<GooglePlacesApiResponse.Place> getActivityRects(String keyword) {
+	public GooglePlacesApiResponse getActivityRects(String keyword) {
 		return kakaoPlaceSearchService.getRects(seoulBoxes, keyword);
 	}
 }

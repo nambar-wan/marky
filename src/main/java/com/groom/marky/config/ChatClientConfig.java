@@ -2,6 +2,8 @@ package com.groom.marky.config;
 
 import java.util.List;
 
+import com.groom.marky.service.advisor.*;
+import com.groom.marky.service.tool.ActivitySearchTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -44,23 +46,27 @@ public class ChatClientConfig {
 		SystemRoleAdvisor systemRoleAdvisor,
 		UserIntentAdvisor userIntentAdvisor,
 		LocationResolverAdvisor locationResolverAdvisor,
+		ActivityDetailAdvisor activityDetailAdvisor,
 		RedisGeoSearchTool redisGeoSearchTool,
 		PlaceVectorSearchTool placeVectorSearchTool,
+		ActivitySearchTool activitySearchTool,
 		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
 
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool))
+			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,activitySearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 
 		return ChatClient.builder(model)
 			.defaultOptions(chatOptions)
 			.defaultAdvisors(List.of(
+        MessageChatMemoryAdvisor.builder(chatMemory).build(),
 				systemRoleAdvisor,
 				userIntentAdvisor,
 				locationResolverAdvisor,
 				multiPurposeActionAdvisor,
-				MessageChatMemoryAdvisor.builder(chatMemory).build()
+				activityDetailAdvisor,
+				multiPurposeActionAdvisor
 			))
 			.build();
 	}
@@ -114,4 +120,8 @@ public class ChatClientConfig {
 		return new SubwayRouteAdvisor(tmapTransitClient);
 	}
 
+	@Bean
+	public ActivityDetailAdvisor activityDetailAdvisor(ChatModel chatModel, ObjectMapper objectMapper){
+		return new ActivityDetailAdvisor(chatModel, objectMapper);
+	}
 }

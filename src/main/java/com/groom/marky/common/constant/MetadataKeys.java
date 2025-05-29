@@ -14,4 +14,5 @@ public final class MetadataKeys {
 	public static final String FORMATTEDADDRESS = "formattedAddress";
 	public static final String USERRATINGCOUNT = "userRatingCount";
 	public static final String RATING = "rating";
+	public static final String ACTIVITY_TYPE = "activity_type";
 }
