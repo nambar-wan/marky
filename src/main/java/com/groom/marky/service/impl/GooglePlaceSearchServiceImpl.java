@@ -142,7 +142,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 	}
 
 	@Override
-	public List<GooglePlacesApiResponse.Place> search(String text, Set<Rectangle> rects) {
+	public GooglePlacesApiResponse search(String text, Set<Rectangle> rects) {
 
 		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();
 
@@ -181,7 +181,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 				}
 			}
 		}
-		return places;
+		return new GooglePlacesApiResponse(places, null);
 	}
 
 	private static PlacesTextRequest buildRequest(String text, GooglePlaceType type, Rectangle rect,

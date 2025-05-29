@@ -2,6 +2,8 @@ package com.groom.marky.config;
 
 import java.util.List;
 
+import com.groom.marky.service.advisor.*;
+import com.groom.marky.service.tool.ActivitySearchTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -15,11 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.groom.marky.common.TmapGeocodingClient;
 import com.groom.marky.common.TmapTransitClient;
-import com.groom.marky.service.advisor.LocationResolverAdvisor;
-import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
-import com.groom.marky.service.advisor.SubwayRouteAdvisor;
-import com.groom.marky.service.advisor.SystemRoleAdvisor;
-import com.groom.marky.service.advisor.UserIntentAdvisor;
 import com.groom.marky.service.tool.PlaceVectorSearchTool;
 import com.groom.marky.service.tool.RedisGeoSearchTool;
 
@@ -32,12 +29,14 @@ public class ChatClientConfig {
 		SystemRoleAdvisor systemRoleAdvisor,
 		UserIntentAdvisor userIntentAdvisor,
 		LocationResolverAdvisor locationResolverAdvisor,
+		ActivityDetailAdvisor activityDetailAdvisor,
 		RedisGeoSearchTool redisGeoSearchTool,
 		PlaceVectorSearchTool placeVectorSearchTool,
+		ActivitySearchTool activitySearchTool,
 		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
 
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool))
+			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,activitySearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 
@@ -47,6 +46,7 @@ public class ChatClientConfig {
 				systemRoleAdvisor,
 				userIntentAdvisor,
 				locationResolverAdvisor,
+				activityDetailAdvisor,
 				multiPurposeActionAdvisor
 			))
 			.build();
@@ -101,4 +101,8 @@ public class ChatClientConfig {
 		return new SubwayRouteAdvisor(tmapTransitClient);
 	}
 
+	@Bean
+	public ActivityDetailAdvisor activityDetailAdvisor(ChatModel chatModel, ObjectMapper objectMapper){
+		return new ActivityDetailAdvisor(chatModel, objectMapper);
+	}
 }

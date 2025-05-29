@@ -13,6 +13,6 @@ public interface GooglePlaceSearchService {
 
 	GooglePlacesApiResponse searchNearby(List<String> types, Rectangle box);
 
-	List<GooglePlacesApiResponse.Place> search(String text, Set<Rectangle> boxes);
+	GooglePlacesApiResponse search(String text, Set<Rectangle> boxes);
 
 }
