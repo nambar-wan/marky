@@ -94,7 +94,7 @@ public class ActivityDetailAdvisor implements CallAdvisor {
             Map<String, String> extracted = objectMapper.readValue(json, new TypeReference<>() {});
             String activityDetail = extracted.get(ACTIVITY_DETAIL);
 
-            if(!SUPPORTED_ACTIVITIES.contains(activityDetail) || activityDetail == null){
+            if(activityDetail == null || !SUPPORTED_ACTIVITIES.contains(activityDetail)){
                 log.info("[ActivityDetailAdvisor] 지원하지 않는 액티비티 또는 intent 없음: {} - 건너뛰기", activityDetail);
                 return chain.nextCall(request);
             }
