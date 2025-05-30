@@ -175,9 +175,11 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 				response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
 						GooglePlacesApiResponse.class).getBody();
 
-				if (response != null && response.places() != null) {
-					places.addAll(response.places());
-					nextPageToken = response.nextPageToken();
+				if (response != null) {
+					if (response.places() != null && !response.places().isEmpty()) {
+						places.addAll(response.places());
+					}
+					nextPageToken = response.nextPageToken(); // 항상 업데이트
 				}
 			}
 		}
