@@ -1,13 +1,13 @@
 package com.groom.marky.service.impl;
 
+import static com.groom.marky.common.constant.MetadataKeys.*;
 import static com.groom.marky.domain.response.GooglePlacesApiResponse.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
@@ -28,6 +28,7 @@ import com.groom.marky.common.constant.GooglePlaceType;
 import com.groom.marky.domain.request.Rectangle;
 import com.groom.marky.domain.response.GooglePlacesApiResponse;
 
+@Slf4j
 @Service
 public class RedisService {
 
@@ -50,7 +51,21 @@ public class RedisService {
 				.add(key, new Point(place.location().longitude(), place.location().latitude()), place.id());
 		}
 	}
+	public void setSeoulPlacesLocation(GooglePlaceType type, List<Document> documents) {
+		String key = RedisKeyParser.getPlaceKey(type);
 
+		for (Document document : documents) {
+			Map<String, Object> metadata = document.getMetadata();
+			String lat = (String) metadata.get(LAT);
+			String lon = (String) metadata.get(LON);
+			String placeId = (String) metadata.get(GOOGLEPLACEID);
+			log.info("lat : {}, lon : {}, placeId : {}",lat,lon,placeId);
+			if (lat != null && lon != null && placeId != null) {
+				redisTemplate.opsForGeo()
+						.add(key, new Point(Double.parseDouble(lon), Double.parseDouble(lat)), placeId);
+			}
+		}
+	}
 	public List<String> getNearbyPlacesId(String key, double lat, double lon, double radiusKm) {
 		GeoResults<RedisGeoCommands.GeoLocation<String>> results =
 			redisTemplate.opsForGeo().radius(

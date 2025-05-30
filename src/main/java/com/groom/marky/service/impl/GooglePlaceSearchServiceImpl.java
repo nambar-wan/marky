@@ -233,6 +233,31 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 			GooglePlacesApiResponse.class).getBody();
 	}
 
+	@Override
+	public String searchPlaceId(String text) {
+		log.info("text : {}", text);
+		PlacesTextRequest request = PlacesTextRequest.builder()
+				.textQuery(text)
+				.build();
+		log.info("request : {}", request.getTextQuery());
+		// 헤더 세팅
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("X-Goog-FieldMask", "places.id");
+		headers.set("X-Goog-Api-Key", apiKey);
+
+		// 요청 생성
+		HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
+		log.info("httpEntity : {}", httpEntity);
+		GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
+				GooglePlacesApiResponse.class).getBody();
+		String result = (response != null && response.places() != null && !response.places().isEmpty())
+				? response.places().getFirst().id()
+				: null;
+		log.info(result);
+		return  result;
+	}
+
 	private URI getGoogleSearchTextUri() {
 		return UriComponentsBuilder.fromUriString(GOOGLE_API_BASE + SEARCH_PATH)
 			.encode(StandardCharsets.UTF_8)
