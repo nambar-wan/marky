@@ -2,11 +2,13 @@ package com.groom.marky.controller;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.groom.marky.domain.response.CafeDescriptionBuilder;
 import com.groom.marky.domain.response.RestaruantDescriptionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -94,8 +96,8 @@ public class GoogleMapController {
 
     @GetMapping("/load/cafe")
     public ResponseEntity<?> embeddingCafe() {
-        boolean sampling = true; // 샘플링
-                           // false; // 서울 전체
+        boolean sampling = //true; // 샘플링
+                            false; // 서울 전체
         if(sampling) {
             // kakao cafe 57
             double lat1 = 37.55855401875;
@@ -120,22 +122,31 @@ public class GoogleMapController {
         }
         else {
             Set<Rectangle> cafeBoxes = seoulPlaceSearchService.getCafeRects();
+            Iterator<Rectangle> iterator = cafeBoxes.iterator();
+
+//            Map<Rectangle, Integer> cafeBoxes = seoulPlaceSearchService.getCafeRectsMap();
+//            Iterator<Map.Entry<Rectangle, Integer>> iterator = cafeBoxes.entrySet().iterator();
+
             int boxQty = cafeBoxes.size();
             int completeBox = 0;
 
-            Iterator<Rectangle> iterator = cafeBoxes.iterator();
             int maxRetries = 5;
-            int retryCount = 0;
+            int retryCount = 1;
 
             while (iterator.hasNext()) {
+//                Map.Entry<Rectangle, Integer> entry = iterator.next();
+//                Rectangle box = entry.getKey();
+//                Integer count = entry.getValue();
                 Rectangle box = iterator.next();
 
+
+                log.info("");
                 log.info("카페 탐색: ({}, {}) ~ ({}, {})",
                         box.getLow().getLatitude(),
                         box.getLow().getLongitude(),
                         box.getHigh().getLatitude(),
                         box.getHigh().getLongitude());
-                while(retryCount < maxRetries) {
+                while(retryCount <= maxRetries) {
                     try {
                         GooglePlacesApiResponse response =
                                 googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
@@ -148,21 +159,24 @@ public class GoogleMapController {
 
                         break;
                     } catch (HttpClientErrorException.TooManyRequests e) {
-                        retryCount++;
-                        log.warn("429 Too Many Requests 발생 - {}번째 재시도 예정", retryCount);
+                        log.warn("429 Too Many Requests 발생 - {}번째 재시도 예정", ++retryCount);
 
                         try {
-                            Thread.sleep(5000L * retryCount);
+                            Thread.sleep(10000L * retryCount);
 
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                             throw new RuntimeException("재시도 대기 중 인터럽트 발생");
                         }
+                    } catch (DataIntegrityViolationException dive){
+                        log.warn("Data Integrity Violation 발생");
+                        break;
                     }
-                }
+                }retryCount = 1;
+
+                log.info("{} 지역 중 {} 개 완료", boxQty, ++completeBox);
+                iterator.remove();
             }
-            log.info("{} 지역 중 {} 개 완료", boxQty, completeBox);
-            iterator.remove();
         }
         log.info("전체 카페 임베딩 완료");
 
