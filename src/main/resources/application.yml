@@ -43,7 +43,7 @@ spring:
 
     vectorstore:
       pgvector:
-        dimensions: 768
+        dimensions: 1024
         initialize-schema: false
         max-document-batch-size: 10000
         index-type: hnsw

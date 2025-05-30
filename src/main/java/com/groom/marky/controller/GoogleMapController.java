@@ -24,6 +24,7 @@ import com.groom.marky.service.impl.GooglePlaceSearchServiceImpl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Slf4j
 @Controller
@@ -94,7 +95,7 @@ public class GoogleMapController {
     @GetMapping("/load/cafe")
     public ResponseEntity<?> embeddingCafe() {
         boolean sampling = true; // 샘플링
-                            //false; // 서울 전체
+                           // false; // 서울 전체
         if(sampling) {
             // kakao cafe 57
             double lat1 = 37.55855401875;
@@ -119,7 +120,12 @@ public class GoogleMapController {
         }
         else {
             Set<Rectangle> cafeBoxes = seoulPlaceSearchService.getCafeRects();
+            int boxQty = cafeBoxes.size();
+            int completeBox = 0;
+
             Iterator<Rectangle> iterator = cafeBoxes.iterator();
+            int maxRetries = 5;
+            int retryCount = 0;
 
             while (iterator.hasNext()) {
                 Rectangle box = iterator.next();
@@ -129,19 +135,36 @@ public class GoogleMapController {
                         box.getLow().getLongitude(),
                         box.getHigh().getLatitude(),
                         box.getHigh().getLongitude());
+                while(retryCount < maxRetries) {
+                    try {
+                        GooglePlacesApiResponse response =
+                                googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
+                        log.info("구글 장소 검색 완료");
 
-                GooglePlacesApiResponse response =
-                        googlePlaceSearchService.search(CAFE_KEYWORD, GooglePlaceType.CAFE, box);
-                log.info("구글 장소 검색 완료");
-                embeddingService.saveEmbeddings(response, cafeDescriptionBuilder);
-                log.info("임베딩 완료");
-                redisService.setPlacesLocation(GooglePlaceType.CAFE, response);
-                log.info("좌표값 레디스 저장");
+                        embeddingService.saveEmbeddings(response, cafeDescriptionBuilder);
+                        log.info("임베딩 완료");
+                        redisService.setPlacesLocation(GooglePlaceType.CAFE, response);
+                        log.info("좌표값 레디스 저장");
 
-                iterator.remove();
+                        break;
+                    } catch (HttpClientErrorException.TooManyRequests e) {
+                        retryCount++;
+                        log.warn("429 Too Many Requests 발생 - {}번째 재시도 예정", retryCount);
+
+                        try {
+                            Thread.sleep(5000L * retryCount);
+
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("재시도 대기 중 인터럽트 발생");
+                        }
+                    }
+                }
             }
+            log.info("{} 지역 중 {} 개 완료", boxQty, completeBox);
+            iterator.remove();
         }
-        log.info("카페 임베딩 완료");
+        log.info("전체 카페 임베딩 완료");
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
