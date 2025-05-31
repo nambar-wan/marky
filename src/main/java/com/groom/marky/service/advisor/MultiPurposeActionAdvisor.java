@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Description;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Description("사용자의 intent, location, mood context를 기반으로 searchParkingLots와 similaritySearch 툴 호출을 구성하고 실행을 유도하는 어드바이저")
+@Description("사용자의 intent, location, mood context를 기반으로 searchParkingLots와 searchActivity와 similaritySearch 툴 호출을 구성하고 실행을 유도하는 어드바이저")
 public class MultiPurposeActionAdvisor implements CallAdvisor {
 
 	private static final String toolHint = """
@@ -27,6 +27,9 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		- 이 함수는 pgvector 기반의 벡터 임베딩을 사용하여 장소 설명과 mood 간의 의미 유사도를 비교합니다.
 		- 'ids' 파라미터로 전달된 장소 목록 중에서 분위기와 가장 유사한 장소를 추출합니다.
 		
+		3. searchActivity(lat : Double, lon : Double, activity_detail : String)
+		- 사용자의 현재 위치를 기준으로 주변 intent의 고유 ID 목록을 조회합니다.
+		- 반환된 ID 리스트는 이후 추천할 대상의 범위를 한정할 때 사용됩니다.
 		
 		[mood 설명]
 		- mood는 사용자가 원하는 분위기나 조건을 뜻하는 텍스트로, 예를 들어 다음과 같은 값이 있습니다:
@@ -41,7 +44,9 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		  - 접근성이 좋은
 		- mood 값은 자연어 그대로 전달하면 됩니다. 예: mood="리뷰가 좋은"
 		
-
+		[예시]
+		- '리뷰가 좋은 주차장을 추천해줘' → searchParkingLots(lat : Double, lon : Double) -> similaritySearch(mood="리뷰가 좋은", ids=[...])
+		- '조용하고 쾌적한 주차장' → searchParkingLots(lat : Double, lon : Double) -> similaritySearch(mood="조용하고 쾌적한", ids=[...])
 		
 		요청에 맞는 툴을 위 형식대로 호출해 주세요.
 		""";
@@ -86,6 +91,6 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 
 	@Override
 	public int getOrder() {
-		return 3;
+		return 4;
 	}
 }

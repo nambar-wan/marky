@@ -79,6 +79,8 @@ public class UserIntentAdvisor implements CallAdvisor {
 		));
 
 		String json = chatModel.call(prompt).getResult().getOutput().getText();
+
+
 		if (!json.trim().startsWith("{")) {
 			log.warn("LLM 응답이 JSON이 아님: {}", json);
 			return chain.nextCall(request);

@@ -106,9 +106,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 	@Override
 	public GooglePlacesApiResponse search(String text, GooglePlaceType type, Rectangle rect) {
-
-		// 카페, 카페타입, 범위
-		log.info("search 호출");
+		log.info("호출 rect : {}", rect.toString());
 
 		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();
 
@@ -121,12 +119,12 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		headers.set("X-Goog-FieldMask", TEXT_FIELD_HEADER);
 		headers.set("X-Goog-Api-Key", apiKey);
 
-		// 요청 생성 (여기서 에러뜸)
+		// 요청 생성
 		HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
+
 		GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST,
 			httpEntity,
 			GooglePlacesApiResponse.class).getBody();
-
 
 		// 응답 담기
 		if (response != null && response.places() != null) {
@@ -154,9 +152,8 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		return new GooglePlacesApiResponse(places, null);
 	}
 
-
 	@Override
-	public List<GooglePlacesApiResponse.Place> search(String text, Set<Rectangle> rects) {
+	public GooglePlacesApiResponse search(String text, Set<Rectangle> rects) {
 
 		ArrayList<GooglePlacesApiResponse.Place> places = new ArrayList<>();
 
@@ -195,10 +192,10 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 				}
 			}
 		}
-		return places;
+		return new GooglePlacesApiResponse(places, null);
 	}
 
-	private static PlacesTextRequest buildRequest(String text, GooglePlaceType type, LocationRestriction restriction,
+	private static PlacesTextRequest buildRequest(String text, GooglePlaceType type, Rectangle rect,
 		String pageToken) {
 		return PlacesTextRequest.builder()
 			.pageToken(pageToken)
@@ -206,17 +203,17 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 			.textQuery(text)
 			.languageCode(LANGUAGE_CODE)
 			.regionCode(REGION_CODE)
-			.locationRestriction(restriction)
+			.locationRestriction(new PlacesTextRequest.RectangleWrapper(rect))
 			.build();
 	}
 
-	private static PlacesTextRequest buildRequest(String text, LocationRestriction restriction, String pageToken) {
+	private static PlacesTextRequest buildRequest(String text, Rectangle rect, String pageToken) {
 		return PlacesTextRequest.builder()
 				.pageToken(pageToken)
 				.textQuery(text)
 				.languageCode(LANGUAGE_CODE)
 				.regionCode(REGION_CODE)
-				.locationRestriction(restriction)
+				.locationRestriction(new PlacesTextRequest.RectangleWrapper(rect))
 				.build();
 	}
 

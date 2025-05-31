@@ -28,17 +28,11 @@ spring:
           temperature: 0.4
           internal-tool-execution-enabled: true
 
-#      embedding:
-#        api-key: ${OPEN_AI_API_KEY}
-#        options:
-#          model: text-embedding-3-small
-#          dimensions: 768
-
     ollama:
       base-url: http://localhost:11434
       embedding:
         options:
-          model: nomic-embed-text
+          model : nomic-embed-text
           keep-alive: 5m
 
     vectorstore:

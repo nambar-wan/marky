@@ -10,8 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.groom.marky.domain.request.Rectangle;
+import com.groom.marky.service.KakaoPlaceSearchService;
+import com.groom.marky.service.impl.KakaoPlaceSearchServiceImpl;
 import com.groom.marky.service.impl.SeoulPlaceSearchService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,10 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 public class KakaoMapController {
 
 	private final SeoulPlaceSearchService seoulPlaceSearchService;
+	private final KakaoPlaceSearchService kakaoPlaceSearchService;
 
 	@Autowired
-	public KakaoMapController(SeoulPlaceSearchService seoulPlaceSearchService) {
+	public KakaoMapController(SeoulPlaceSearchService seoulPlaceSearchService,
+		KakaoPlaceSearchService kakaoPlaceSearchService) {
 		this.seoulPlaceSearchService = seoulPlaceSearchService;
+		this.kakaoPlaceSearchService = kakaoPlaceSearchService;
 	}
 
 	@GetMapping("/parkinglot")
@@ -62,5 +68,17 @@ public class KakaoMapController {
 		log.info("cafeBoxes {}", cafeBoxes.size());
 
 		return new ResponseEntity<>(cafeBoxes, HttpStatus.OK);
+	}
+
+
+	@GetMapping("/search")
+	public ResponseEntity<?> searchKeyword(@RequestParam("keyword") String keyword) {
+
+
+		Map<String, Double> search = kakaoPlaceSearchService.search(keyword);
+
+		log.info("search result : {}", search);
+
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 }

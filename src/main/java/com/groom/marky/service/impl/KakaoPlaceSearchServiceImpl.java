@@ -18,6 +18,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -60,7 +61,7 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		this.restTemplate = restTemplate;
 		this.objectMapper = objectMapper;
 		this.apiKey = apiKey;
-        this.googlePlaceSearchService = googlePlaceSearchService;
+		this.googlePlaceSearchService = googlePlaceSearchService;
 
 		// 한 번만 생성해서 재사용 가능한 final 필드로 초기화
 		HttpHeaders headers = new HttpHeaders();
@@ -102,8 +103,6 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 					if (!province.startsWith("서울") || result.containsKey(id)) {
 						continue;
 					}
-
-					//log.info("placeName : {}, addressName : {}", placeName, addressName);
 					result.put(id, placeName);
 				}
 
@@ -148,10 +147,36 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		return result;
 	}
 
-
+	/**
+	 *
+	 * @param
+	 * keyword 검색 키워드
+	 *
+	 * @return
+	 * Map<String, Double> lat : 위도값, lon : 경도값
+	 */
 	@Override
-	public Map<String, String> search(String rect, String keyword) {
-		return Map.of();
+	public Map<String, Double> search(String keyword) {
+		HashMap<String, Double> result = new HashMap<>();
+
+		try {
+			URI uri = buildKeywordUri(keyword);
+
+			ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
+
+			String body = response.getBody();
+			JsonNode root = objectMapper.readTree(body);
+			JsonNode documents = root.path("documents");
+			JsonNode firstNode = documents.get(0);
+
+			result.put("lat", Double.parseDouble(firstNode.get("y").textValue()));
+			result.put("lon", Double.parseDouble(firstNode.get("x").textValue()));
+
+		} catch (Exception e) {
+			log.info("[KakaoPlaceSearchServiceImpl] search 예외 발생  keyword : {}, message : {} ", keyword, e.getMessage());
+		}
+		return result;
+
 	}
 
 	@Override
@@ -166,7 +191,7 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 			JsonNode meta = objectMapper.readTree(response.getBody()).path("meta");
 			result = meta.path("total_count").asInt();
 		} catch (JsonProcessingException e) {
-			log.info("searchTotalParkingLotCountByRect 예외 발생 : {}", e.getMessage());
+			log.info("[KakaoPlaceSearchServiceImpl] searchTotalParkingLotCountByRect 예외 발생 : {}", e.getMessage());
 		}
 		return result;
 	}
@@ -199,7 +224,7 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	}
 
 	@Override
-	public List<GooglePlacesApiResponse.Place> getRects(List<Rectangle> rects, String keyword) {
+	public GooglePlacesApiResponse getRects(List<Rectangle> rects, String keyword) {
 		Set<Rectangle> kakaoResult = new HashSet<>();
 		ArrayDeque<Rectangle> queue = new ArrayDeque<>(rects);
 
@@ -269,6 +294,15 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		return result;
 	}
 
+	private static URI buildKeywordUri(String keyword) {
+		return UriComponentsBuilder.fromUriString(KEYWORD_SEARCH_API_URI)
+			.queryParam("page", 1)
+			.queryParam("size", 1)
+			.queryParam("query", keyword)
+			.queryParam("sort", ACCURACY_SORT)
+			.encode(StandardCharsets.UTF_8)
+			.build().toUri();
+	}
 
 	private static URI buildKeywordUri(String rect, String keyword) {
 		return UriComponentsBuilder.fromUriString(KEYWORD_SEARCH_API_URI)
@@ -302,7 +336,6 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 			.encode(StandardCharsets.UTF_8)
 			.build().toUri();
 	}
-
 
 }
 

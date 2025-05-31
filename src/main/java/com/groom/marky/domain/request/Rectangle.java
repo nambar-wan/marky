@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.groom.marky.common.constant.SeoulBounds;
 
 import lombok.Getter;
@@ -13,16 +15,16 @@ import lombok.Setter;
 
 @Setter
 @Getter
-//@JsonTypeName("rectangle")
-public class Rectangle implements LocationRestriction {
+@JsonTypeName("rectangle")
+public class Rectangle{
 
 	private Coordinate low;
 	private Coordinate high;
 
 	@JsonCreator
 	public Rectangle(
-		Coordinate low,
-		Coordinate high
+		@JsonProperty("low") Coordinate low,
+		@JsonProperty("high") Coordinate high
 	) {
 		this.low = low;
 		this.high = high;
