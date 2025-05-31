@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.groom.marky.domain.response.GooglePlacesApiResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -46,6 +45,7 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 	private final ObjectMapper objectMapper;
 	private final GooglePlaceSearchServiceImpl googlePlaceSearchService;
 
+
 	private static final String KEYWORD_SEARCH_API_URI = "https://dapi.kakao.com/v2/local/search/keyword.json";
 	private static final String CATEGORY_SEARCH_API_URI = "https://dapi.kakao.com/v2/local/search/category.json";
 	private static final String ACCURACY_SORT = "accuracy";
@@ -53,10 +53,10 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 
 	@Autowired
 	public KakaoPlaceSearchServiceImpl(
-		RestTemplate restTemplate,
-		ObjectMapper objectMapper,
-		@Value("${KAKAO_REST_API_KEY}") String apiKey, GooglePlaceSearchServiceImpl googlePlaceSearchService
-		// 이렇게 주입하면 되는군
+            RestTemplate restTemplate,
+            ObjectMapper objectMapper,
+            @Value("${KAKAO_REST_API_KEY}") String apiKey,
+			GooglePlaceSearchServiceImpl googlePlaceSearchService // 이렇게 주입하면 되는군
 	) {
 		this.restTemplate = restTemplate;
 		this.objectMapper = objectMapper;
@@ -248,6 +248,32 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		}
 		// Use GooglePlacesApiResponse.Place instead of raw String
 		return googlePlaceSearchService.search(keyword, kakaoResult);
+	}
+
+	@Override
+	public Map<Rectangle, Integer> getRectsMap(List<Rectangle> rects, KakaoMapCategoryGroupCode code){
+		Map<Rectangle, Integer> result = new HashMap<>();
+		ArrayDeque<Rectangle> queue = new ArrayDeque<>(rects);
+
+		// 개별 박스 큐
+		while (!queue.isEmpty()) {
+			Rectangle rect = queue.poll();
+			int total = getTotalCount(rect.toString(), code);
+
+			if (total == 0) {
+				continue;
+			}
+
+			if (total > 60) {
+				// 분리
+				queue.addAll(rect.splitGrid());
+				continue;
+			}
+
+			log.info("rect : {}, total : {}", rect, total);
+			result.put(rect, total);
+		}
+		return result;
 	}
 
 	@Override

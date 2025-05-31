@@ -46,6 +46,10 @@ public class SeoulPlaceSearchService {
 		return kakaoPlaceSearchService.getRects(seoulBoxes, CE7);
 	}
 
+	public Map<Rectangle, Integer> getCafeRectsMap() {
+		return kakaoPlaceSearchService.getRectsMap(seoulBoxes, CE7);
+	}
+
 	public Set<Rectangle> getRestaurantRects() {
 
 		return kakaoPlaceSearchService.getRects(seoulBoxes, FD6);

@@ -22,11 +22,10 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		- 사용자의 현재 위치를 기준으로 주변 주차장의 고유 ID 목록을 조회합니다.
 		- 반환된 ID 리스트는 이후 추천할 대상의 범위를 한정할 때 사용됩니다.
 		
-		
 		2. similaritySearch(mood: String, ids: List<String>)
 		- 사용자가 원하는 분위기(mood)와 의미적으로 유사한 장소를 5개 추천합니다.
 		- 이 함수는 pgvector 기반의 벡터 임베딩을 사용하여 장소 설명과 mood 간의 의미 유사도를 비교합니다.
-		- 'ids' 파라미터로 전달된 주차장 목록 중에서 분위기와 가장 유사한 장소를 추출합니다.
+		- 'ids' 파라미터로 전달된 장소 목록 중에서 분위기와 가장 유사한 장소를 추출합니다.
 		
 		3. searchActivity(lat : Double, lon : Double, activity_detail : String)
 		- 사용자의 현재 위치를 기준으로 주변 intent의 고유 ID 목록을 조회합니다.
@@ -78,6 +77,8 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		ChatClientResponse response = chain.nextCall(updatedRequest);
 
 		// 결과 로깅
+		log.info("api 응답: {}", response.chatResponse().getResult().getOutput());
+		log.info("toolCalls: {}", response.chatResponse().getResult().getOutput().getToolCalls());
 		log.info("metadata: {}", response.chatResponse().getResult().getOutput().getMetadata());
 
 		return response;
