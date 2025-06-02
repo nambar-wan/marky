@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groom.marky.common.constant.CsvType;
+import com.groom.marky.common.constant.GooglePlaceType;
 import com.groom.marky.service.SeoulInfoApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -23,14 +24,15 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static com.groom.marky.common.constant.MetadataKeys.*;
 
 @Slf4j
 @Service
 public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
+    private final GooglePlaceSearchServiceImpl googlePlaceSearchService;
+    private final RedisService redisService;
     private final int BATCH_SIZE = 1000;
     @Value("${SEOUL_DATASET_API_KEY}")
     private final String apiKey;
@@ -40,13 +42,15 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
     private final VectorStore vectorStore;
 
     private static final String SEOUL_API = "http://openapi.seoul.go.kr:8088";
-    private static final String TYPE = "json";
+    private static final String JSON = "json";
 
     @Autowired
-    public SeoulInfoApiServiceImpl(RestTemplate restTemplate,
+    public SeoulInfoApiServiceImpl(GooglePlaceSearchServiceImpl googlePlaceSearchService, RedisService redisService, RestTemplate restTemplate,
                                    ObjectMapper objectMapper,
                                    @Value("${SEOUL_DATASET_API_KEY}") String apiKey,
                                    VectorStore vectorStore) {
+        this.googlePlaceSearchService = googlePlaceSearchService;
+        this.redisService = redisService;
 
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
@@ -70,7 +74,7 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             while (start <= totalCount) {
 
                 URI uri = UriComponentsBuilder.fromUriString(SEOUL_API)
-                        .pathSegment(apiKey, TYPE, serviceType, String.valueOf(start), String.valueOf(start + BATCH_SIZE - 1))
+                        .pathSegment(apiKey, JSON, serviceType, String.valueOf(start), String.valueOf(start + BATCH_SIZE - 1))
                         .build(true)
                         .toUri();
 
@@ -144,8 +148,10 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             String region = record.get("CTPRVN_NM");
             if (!region.contains("서울")) continue;
 
-            String name = record.get("FCLTY_NM");
-            String category = record.get("MLSFC_NM");
+            String galleryName = record.get("FCLTY_NM");
+            if(galleryName == null || galleryName.isBlank()){
+                continue;
+            }
             String tel = record.get("TEL_NO");
             String latitude = record.get("FCLTY_LA");
             String longitude = record.get("FCLTY_LO");
@@ -153,25 +159,36 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             String address = record.get("SIGNGU_NM");
 
             String content = String.format(
-                "%s 미술관은 %s 분류에 속하며, 위치는 %s (%s, %s)입니다. 연락처는 %s, 관람료는 %s입니다.",
-                name, category, address, latitude, longitude, tel, fee
+                "%s 미술관 위치는 %s (%s, %s)입니다. 연락처는 %s, 관람료는 %s입니다.",
+                    galleryName, address, latitude, longitude, tel, fee
             );
+
+            if (latitude == null || latitude.isBlank() || longitude == null || longitude.isBlank()) {
+                log.warn("좌표 정보 누락 - parkName: {}, lat: '{}', lon: '{}'", galleryName, latitude, longitude);
+                continue;
+            }
+            String googlePlaceId = googlePlaceSearchService.searchPlaceId(galleryName);
+            if(googlePlaceId == null || googlePlaceId.isBlank()){
+                continue;
+            }
+            String id = UUID.nameUUIDFromBytes(googlePlaceId.getBytes(StandardCharsets.UTF_8)).toString();
 
             Map<String, Object> metadata = Map.of(
-                "name", name,
-                "category", category,
+                DISPLAYNAME, galleryName,
                 "tel", tel,
-                "latitude", latitude,
-                "longitude", longitude,
+                LAT, latitude,
+                LON, longitude,
                 "fee", fee,
-                "address", address,
-                "type", "gallery"
+                FORMATTEDADDRESS, address,
+                TYPE, "activity",
+                ACTIVITY_TYPE, "미술관",
+                GOOGLEPLACEID, googlePlaceId
             );
-
-            documents.add(new Document(content, metadata));
-            result.put(name, content);
+            documents.add(new Document(id, content, metadata));
+            result.put(galleryName, content);
         }
 
+        redisService.setSeoulPlacesLocation(GooglePlaceType.ACTIVITY,documents);
         vectorStore.add(documents);
         return result;
     }
@@ -185,41 +202,47 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             if (!trailRegion.contains("서울")) continue;
 
             String trailName = record.get("WLK_COURS_NM");
+            if(trailName == null || trailName.isBlank()){
+                continue;
+            }
             String routeSummary = record.get("COURS_DC");
-            String distanceCategory = record.get("COURS_LT_CN");
             String distanceKm = record.get("COURS_DETAIL_LT_CN");
             String description = record.get("ADIT_DC");
             String duration = record.get("COURS_TIME_CN");
-            String waterSupply = record.get("OPTN_DC");
-            String facility = record.get("CVNTL_NM");
-            String store = record.get("TOILET_DC");
             String addr = record.get("LNM_ADDR");
-            String lat = record.get("COURS_SPOT_LA");
-            String lon = record.get("COURS_SPOT_LO");
+            String latitude = record.get("COURS_SPOT_LA");
+            String longitude = record.get("COURS_SPOT_LO");
 
             String content = String.format(
-                "산책코스 '%s' 입니다. 설명: %s 거리: %s (%s) 소요 시간: %s 주소: %s 주요 지점: (%s, %s) 부가정보: 식수=%s, 편의시설=%s, 매점=%s",
-                trailName, description, distanceKm, distanceCategory,
-                duration, addr, lat, lon, waterSupply, facility, store
-            );
+                "산책코스 '%s' 입니다. 설명: %s 거리: %s 소요 시간: %s 주소: %s : (%s, %s)",
+                trailName, description, distanceKm, duration, addr, latitude, longitude);
+            if (latitude == null || latitude.isBlank() || longitude == null || longitude.isBlank()) {
+                log.warn("좌표 정보 누락 - parkName: {}, lat: '{}', lon: '{}'", trailName, latitude, longitude);
+                continue;
+            }
+            String googlePlaceId = googlePlaceSearchService.searchPlaceId(trailName);
+            if(googlePlaceId == null || googlePlaceId.isBlank()){
+                continue;
+            }
+            String id = UUID.nameUUIDFromBytes(googlePlaceId.getBytes(StandardCharsets.UTF_8)).toString();
 
             Map<String, Object> metadata = Map.of(
-                    "trailName",trailName,
-                    "summary", String.format("%s - %s", routeSummary, description),
-                    "distanceCategory", distanceCategory,
-                    "distanceKm", distanceKm,
-                    "duration", duration,
-                    "waterSupply", waterSupply,
-                    "facility", facility,
-                    "store", store,
-                    "addr", addr,
-                    "location", String.format("(%s, %s)", lat, lon)
+                GOOGLEPLACEID, googlePlaceId,
+                DISPLAYNAME,trailName,
+                LAT, latitude,
+                LON, latitude,
+                FORMATTEDADDRESS, addr,
+                TYPE, "activity",
+                ACTIVITY_TYPE, "산책길",
+                "summary", String.format("%s - %s", routeSummary, description),
+                "distanceKm", distanceKm,
+                "duration", duration
             );
 
-            documents.add(new Document(content, metadata));
+            documents.add(new Document(id, content, metadata));
             result.put(trailName, content);
         }
-
+        redisService.setSeoulPlacesLocation(GooglePlaceType.ACTIVITY,documents);
         vectorStore.add(documents);
         return result;
     }
@@ -233,6 +256,9 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             if (!theaterRegion.contains("서울")) continue;
 
             String poiName = record.get("POI_NM");
+            if(poiName == null || poiName.isBlank()){
+                continue;
+            }
             String branchName = record.get("BHF_NM");
             String name = poiName + (branchName != null && !branchName.isBlank() ? " " + branchName : "");
 
@@ -245,32 +271,36 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             String longitude = record.get("LC_LO");
             String latitude = record.get("LC_LA");
 
-            String category = record.get("CL_NM");
-            String roadName = record.get("RDNMADR_NM");
-            String lastChanged = record.get("LAST_CHG_DE");
-            String origin = record.get("ORIGIN_NM");
-
             String content = String.format(
-                "%s 영화관(%s). 위치는 %s, 도로명 주소는 %s입니다. 좌표는 (%s, %s)이며, 마지막 변경일은 %s, 출처는 %s입니다.",
-                name, category, address, roadName, latitude, longitude, lastChanged, origin
+                "%s 영화관 위치는 %s 좌표는 (%s, %s)입니다",
+                name, address, latitude, longitude
             );
+
+            if (latitude == null || latitude.isBlank() || longitude == null || longitude.isBlank()) {
+                log.warn("좌표 정보 누락 - parkName: {}, lat: '{}', lon: '{}'", poiName, latitude, longitude);
+                continue;
+            }
+            String googlePlaceId = googlePlaceSearchService.searchPlaceId(name);
+            if(googlePlaceId == null || googlePlaceId.isBlank()){
+                continue;
+            }
+            String id = UUID.nameUUIDFromBytes(googlePlaceId.getBytes(StandardCharsets.UTF_8)).toString();
 
             Map<String, Object> metadata = Map.of(
-                "name", name,
-                "category", category,
-                "address", address,
-                "roadName", roadName,
-                "latitude", latitude,
-                "longitude", longitude,
-                "lastChanged", lastChanged,
-                "origin", origin,
-                "type", "theater"
+                GOOGLEPLACEID, googlePlaceId,
+                TYPE, "activity",
+                ACTIVITY_TYPE, "영화관",
+                DISPLAYNAME, name,
+                FORMATTEDADDRESS, address,
+                LAT, latitude,
+                LON, longitude
             );
 
-            documents.add(new Document(content, metadata));
+            documents.add(new Document(id, content, metadata));
             result.put(name, content);
         }
 
+        redisService.setSeoulPlacesLocation(GooglePlaceType.ACTIVITY,documents);
         vectorStore.add(documents);
         return result;
     }
@@ -284,29 +314,42 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             String guide = row.path("GUIDANCE").asText();
             String visitRoad = row.path("VISIT_ROAD").asText();
             String useReference = row.path("USE_REFER").asText();
-            String adminPhone = row.path("P_ADMINTEL").asText();
             String addr = row.path("P_ADDR").asText();
-            String mainEquip = row.path("MAIN_EQUIP").asText();
+            String longitude = row.path("LONGITUDE").asText();
+            String latitude = row.path("LATITUDE").asText();
 
             String content = String.format(
-                    "%s 공원 안내: %s 이용안내: %s 방문경로: %s 참고사항: %s 연락처: %s 위치: %s 주요시설: %s",
-                    parkName, parkInfo, guide, visitRoad, useReference, adminPhone, addr, mainEquip
+                    "%s 공원 안내: %s 이용안내: %s 방문경로: %s 참고사항: %s 위치: %s",
+                    parkName, parkInfo, guide, visitRoad, useReference, addr
             );
+            if(parkName == null || parkName.isBlank()){
+                continue;
+            }
+            if (latitude == null || latitude.isBlank() || longitude == null || longitude.isBlank()) {
+                log.warn("좌표 정보 누락 - parkName: {}, lat: '{}', lon: '{}'", parkName, latitude, longitude);
+                continue;
+            }
+            String googlePlaceId = googlePlaceSearchService.searchPlaceId(parkName);
+            String id = UUID.nameUUIDFromBytes(googlePlaceId.getBytes(StandardCharsets.UTF_8)).toString();
 
             Map<String, Object> metadata = Map.of(
-                    "parkName", parkName,
+                    GOOGLEPLACEID, googlePlaceId,
+                    TYPE, "activity",
+                    ACTIVITY_TYPE, "공원",
+                    DISPLAYNAME, parkName,
+                    LAT, latitude,
+                    LON, longitude,
                     "guide", guide,
                     "visitRoad", visitRoad,
                     "useReference", useReference,
-                    "adminPhone", adminPhone,
-                    "address", addr,
-                    "mainEquip", mainEquip
+                    FORMATTEDADDRESS, addr
             );
 
-            documents.add(new Document(content, metadata));
+            documents.add(new Document(id, content, metadata));
             result.put(parkName, content);
         }
 
+        redisService.setSeoulPlacesLocation(GooglePlaceType.ACTIVITY,documents);
         vectorStore.add(documents);
     }
 
@@ -319,25 +362,31 @@ public class SeoulInfoApiServiceImpl implements SeoulInfoApiService {
             String place = row.path("PLACE").asText();
             String date = row.path("DATE").asText();
             String fee = row.path("USE_FEE").asText();
-            String registerDate = row.path("RGSTDATE").asText();
+            String latitude = row.path("LAT").asText();
+            String longitude = row.path("LOT").asText();
+
             String content = String.format(
                     "%s에서 열리는 '%s' 문화행사. 장소는 %s, 날짜는 %s, 관람료는 %s입니다.",
                     location, title, place, date, fee
             );
 
             Map<String, Object> metadata = Map.of(
-                    "title", title,
-                    "location", location,
+                    TYPE, "activity",
+                    ACTIVITY_TYPE, "행사",
+                    DISPLAYNAME, title,
+                    LAT, latitude,
+                    LON, longitude,
+                    FORMATTEDADDRESS, location,
                     "place", place,
                     "date", date,
-                    "fee", fee,
-                    "registerDate", registerDate
+                    "fee", fee
             );
 
             documents.add(new Document(content, metadata));
             result.put(title, content);
         }
 
+        redisService.setSeoulPlacesLocation(GooglePlaceType.ACTIVITY,documents);
         vectorStore.add(documents);
     }
 }

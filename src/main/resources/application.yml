@@ -29,20 +29,21 @@ spring:
           internal-tool-execution-enabled: true
 
     ollama:
-      base-url: http://localhost:11434
+      base-url: http://localhost:11434/
       embedding:
         options:
-          model : nomic-embed-text
+          model: nomic-embed-text
           keep-alive: 5m
 
     vectorstore:
       pgvector:
-        dimensions: 1024
+        dimensions: 768
         initialize-schema: false
         max-document-batch-size: 10000
         index-type: hnsw
         distance-type: cosine-distance
         table-name: vector_store
+#        remove-existing-vector-store-table: true
 
   data:
     redis:
