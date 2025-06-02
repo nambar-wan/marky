@@ -2,6 +2,7 @@ package com.groom.marky.service.tool;
 
 import com.groom.marky.common.RedisKeyParser;
 import com.groom.marky.common.constant.GooglePlaceType;
+import com.groom.marky.service.impl.ActivityMetadataRepository;
 import com.groom.marky.service.impl.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
@@ -23,11 +24,12 @@ public class ActivitySearchTool {
 
     private final RedisService redisService;
     private final VectorStore vectorStore;
-
+    private final ActivityMetadataRepository activityMetadataRepository;
     @Autowired
-    public ActivitySearchTool(RedisService redisService, VectorStore vectorStore) {
+    public ActivitySearchTool(RedisService redisService, VectorStore vectorStore, ActivityMetadataRepository activityMetadataRepository) {
         this.redisService = redisService;
         this.vectorStore = vectorStore;
+        this.activityMetadataRepository = activityMetadataRepository;
     }
 
     @Tool(
@@ -51,39 +53,11 @@ public class ActivitySearchTool {
         log.info("key : {}",key);
         List<String> nearbyPlacesId = redisService.getNearbyPlacesId(key, lat, lon, 2);
         log.info("근처 장소 ID 목록: {}", nearbyPlacesId);
+        log.info("근처 장소 ID 수: {}", nearbyPlacesId.size());
 
-        Filter.Expression idFilter = new Filter.Expression(
-                Filter.ExpressionType.IN,
-                new Filter.Key("googlePlaceId"),
-                new Filter.Value(nearbyPlacesId)  // List<String>을 직접 전달
-        );
-
-        // activity_type도 함께 필터링
-        Filter.Expression activityFilter = new Filter.Expression(
-                Filter.ExpressionType.EQ,
-                new Filter.Key("activity_type"),
-                new Filter.Value(activity_detail)
-        );
-
-        // AND 조건으로 결합
-        Filter.Expression combinedFilter = new Filter.Expression(
-                Filter.ExpressionType.AND,
-                idFilter,
-                activityFilter
-        );
-        log.info("벡터 필터 조건: {}", combinedFilter);
-
-        List<Document> docs = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                        .filterExpression(combinedFilter)
-                        .build()
-        );
-        log.info("검색된 Document 수: {}, 내용: {}", docs.size(), docs);
-
-        return docs.stream()
-                .map(doc -> (String) doc.getMetadata().get("googlePlaceId"))
-                .filter(id -> id != null) // null 체크
-                .collect(Collectors.toList());
+        List<String> byActivityTypeAndPlaceIds = activityMetadataRepository.findByActivityTypeAndPlaceIds(activity_detail, nearbyPlacesId);
+        log.info("byActivityTypeAndPlaceIds 필터링된 Document : {}, 수: {}",byActivityTypeAndPlaceIds, byActivityTypeAndPlaceIds.size());
+        return byActivityTypeAndPlaceIds;
     }
 
 }

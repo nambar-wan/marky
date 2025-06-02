@@ -28,6 +28,8 @@ import com.groom.marky.service.GooglePlaceSearchService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.groom.marky.controller.GoogleMapController.CAFE_KEYWORD;
+
 @Slf4j
 @Service
 public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
@@ -76,7 +78,16 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		"places.servesLunch",
 		"places.servesVegetarianFood",
 		"places.servesWine",
-		"places.takeout"
+		"places.takeout",
+
+		"places.regularOpeningHours.weekdayDescriptions",
+		"places.parkingOptions.freeParkingLot",
+		"places.parkingOptions.paidParkingLot",
+		"places.parkingOptions.freeStreetParking",
+		"places.parkingOptions.paidStreetParking",
+		"places.parkingOptions.valetParking",
+		"places.parkingOptions.freeGarageParking",
+		"places.parkingOptions.paidGarageParking"
 	);
 
 	private String apiKey;
@@ -175,9 +186,11 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 				response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
 						GooglePlacesApiResponse.class).getBody();
 
-				if (response != null && response.places() != null) {
-					places.addAll(response.places());
-					nextPageToken = response.nextPageToken();
+				if (response != null) {
+					if (response.places() != null && !response.places().isEmpty()) {
+						places.addAll(response.places());
+					}
+					nextPageToken = response.nextPageToken(); // 항상 업데이트
 				}
 			}
 		}
@@ -231,6 +244,31 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 		return restTemplate.exchange(getGoogleSearchNearByUri(), HttpMethod.POST, httpEntity,
 			GooglePlacesApiResponse.class).getBody();
+	}
+
+	@Override
+	public String searchPlaceId(String text) {
+		log.info("text : {}", text);
+		PlacesTextRequest request = PlacesTextRequest.builder()
+				.textQuery(text)
+				.build();
+		log.info("request : {}", request.getTextQuery());
+		// 헤더 세팅
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("X-Goog-FieldMask", "places.id");
+		headers.set("X-Goog-Api-Key", apiKey);
+
+		// 요청 생성
+		HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
+		log.info("httpEntity : {}", httpEntity);
+		GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
+				GooglePlacesApiResponse.class).getBody();
+		String result = (response != null && response.places() != null && !response.places().isEmpty())
+				? response.places().getFirst().id()
+				: null;
+		log.info(result);
+		return  result;
 	}
 
 	private URI getGoogleSearchTextUri() {

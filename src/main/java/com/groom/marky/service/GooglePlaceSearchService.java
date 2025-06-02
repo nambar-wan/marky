@@ -15,4 +15,5 @@ public interface GooglePlaceSearchService {
 
 	GooglePlacesApiResponse search(String text, Set<Rectangle> boxes);
 
+	String searchPlaceId(String text);
 }

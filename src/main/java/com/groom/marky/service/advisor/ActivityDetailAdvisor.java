@@ -70,19 +70,21 @@ public class ActivityDetailAdvisor implements CallAdvisor {
                 [카테고리 목록 및 매핑 규칙]
                 다음 13개 중 **가장 적절한 하나를 선택해서** "activity_detail"의 값으로 넣어라.
                 (절대 다른 값을 추가하거나 설명하지 마라.)
-                 1. "클라이밍" - 암벽등반, 볼더링, 클라이밍짐 관련 모든 표현
-                 2. "스크린 야구" - 야구연습, 배팅센터, 스크린베이스볼 관련 모든 표현
-                 3. "스크린 골프" - 골프연습장, 골프 관련 모든 표현
-                 4. "보드게임카페" - 보드게임, 보드카페, 테이블게임 관련 모든 표현
-                 5. "만화카페" - 만화방, 웹툰방, 코믹카페, 만화책 관련 모든 표현
-                 6. "방탈출" - 이스케이프룸, 방탈출게임 관련 모든 표현
-                 7. "VR체험관" - 가상현실, VR게임, VR카페 관련 모든 표현
-                 8. "PC방" - 피시방, 겜방, 게임방, 인터넷카페, 넷카페, 게임 관련 모든 표현
-                 9. "볼링장" - 볼링, 볼링센터 관련 모든 표현
-                 10. "당구장" - 당구, 포켓볼, 빌리어드, 3쿠션 관련 모든 표현
-                 11. "아쿠아리움" - 수족관, 해양박물관 관련 모든 표현
-                 12. "찜질방" - 사우나, 스파, 목욕탕, 온천 관련 모든 표현
-                 13. "시장" - 전통시장, 재래시장, 마켓, 장터 관련 모든 표현
+
+                 1. "클라이밍" - 암벽등반, 볼더링, 클라이밍짐 관련 모든 표현 
+                 2. "스크린야구" - 야구연습, 배팅센터, 스크린베이스볼 관련 모든 표현 
+                 3. "스크린골프" - 골프연습장, 골프 관련 모든 표현 
+                 4. "보드게임카페" - 보드게임, 보드카페, 테이블게임 관련 모든 표현 
+                 5. "만화카페" - 만화방, 웹툰방, 코믹카페, 만화책 관련 모든 표현 
+                 6. "방탈출" - 이스케이프룸, 방탈출게임 관련 모든 표현 
+                 7. "VR체험관" - 가상현실, VR게임, VR카페 관련 모든 표현 
+                 8. "PC방" - 피시방, 겜방, 게임방, 인터넷카페, 넷카페, 게임 관련 모든 표현 
+                 9. "볼링장" - 볼링, 볼링센터 관련 모든 표현 
+                 10. "당구장" - 당구, 포켓볼, 빌리어드, 3쿠션 관련 모든 표현 
+                 11. "아쿠아리움" - 수족관, 해양박물관 관련 모든 표현 
+                 12. "찜질방" - 사우나, 스파, 목욕탕, 온천 관련 모든 표현 
+                 13. "시장" - 전통시장, 재래시장, 마켓, 장터 관련 모든 표현 
+                                  
                   절대 위 13개 외의 다른 값을 사용하지 마라.
                   키는 모두 포함되어야 하며, 값이 없을 경우 "null"로 작성해.
                     설명은 포함하지 마. 너는 툴 콜링을 사용하면 안돼. """),
@@ -99,8 +101,8 @@ public class ActivityDetailAdvisor implements CallAdvisor {
             Map<String, String> extracted = objectMapper.readValue(json, new TypeReference<>() {});
             String activityDetail = extracted.get(ACTIVITY_DETAIL);
 
-            if(!SUPPORTED_ACTIVITIES.contains(activityDetail) || activityDetail.equals("null")){
-                log.info("[ActivityDetailAdvisor] 지원하지 않는 액티비티 또는 intent 없음: {} - 건너뛰기 ", activityDetail);
+            if(activityDetail == null || !SUPPORTED_ACTIVITIES.contains(activityDetail)){
+                log.info("[ActivityDetailAdvisor] 지원하지 않는 액티비티 또는 intent 없음: {} - 건너뛰기", activityDetail);
                 return chain.nextCall(request);
             }
 
