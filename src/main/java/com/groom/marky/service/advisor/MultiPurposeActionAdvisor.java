@@ -27,7 +27,12 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		- 이 함수는 pgvector 기반의 벡터 임베딩을 사용하여 장소 설명과 mood 간의 의미 유사도를 비교합니다.
 		- 'ids' 파라미터로 전달된 장소 목록 중에서 분위기와 가장 유사한 장소를 추출합니다.
 		
-		3. searchActivity(lat : Double, lon : Double, activity_detail : String)
+		3. getsubwayRoute(origin: String, destination: String)
+		- 사용자가 원하는 출발역과 도착역을 기준으로 지하철 최적 경로를 조회합니다.
+		- 최적 경로, 소요 시간, 환승 정보, 출발역 혼잡도, 환승역 혼잡도등에 대한 모든 정보를 반환합니다.
+		- 하나의 노선으로 갈 수 있다면 하나의 노선 경로로 안내로 반환합니다.
+		
+		4. searchActivity(lat : Double, lon : Double, activity_detail : String)
 		- 사용자의 현재 위치를 기준으로 주변 intent의 고유 ID 목록을 조회합니다.
 		- 반환된 ID 리스트는 이후 추천할 대상의 범위를 한정할 때 사용됩니다.
 		
@@ -45,6 +50,8 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		- mood 값은 자연어 그대로 전달하면 됩니다. 예: mood="리뷰가 좋은"
 		
 		[예시]
+		- '서울역에서 강남역까지 가는 최단 지하철 경로 알려줘' -> getSubwayRoute(origin="서울역", destination="강남역")
+		- '종로3가에서 홍대입구까지 가는 법' -> getSubwayRoute(origin="종로3가", destination="홍대입구")
 		- '리뷰가 좋은 주차장을 추천해줘' → searchParkingLots(lat : Double, lon : Double) -> similaritySearch(mood="리뷰가 좋은", ids=[...])
 		- '조용하고 쾌적한 주차장' → searchParkingLots(lat : Double, lon : Double) -> similaritySearch(mood="조용하고 쾌적한", ids=[...])
 		

@@ -17,10 +17,15 @@ import lombok.extern.slf4j.Slf4j;
 @Description("출발지~목적지 사이의 지하철 경로를 조회하는 어드바이저")
 public class SubwayRouteAdvisor implements CallAdvisor {
 
-	private static final String DEPARTURE_LAT_KEY = "departureLat";
-	private static final String DEPARTURE_LON_KEY = "departureLon";
-	private static final String DESTINATION_LAT_KEY = "destinationLat";
-	private static final String DESTINATION_LON_KEY = "destinationLon";
+	private static final String ORIGIN_LAT = "originLat";
+	private static final String ORIGIN_LON = "originLon";
+	private static final String DEST_LAT = "destLat";
+	private static final String DEST_LON = "destLon";
+
+//	private static final String DEPARTURE_LAT_KEY = "departureLat";
+//	private static final String DEPARTURE_LON_KEY = "departureLon";
+//	private static final String DESTINATION_LAT_KEY = "destinationLat";
+//	private static final String DESTINATION_LON_KEY = "destinationLon";
 
 	private final TmapTransitClient tmapTransitClient;
 
@@ -35,21 +40,21 @@ public class SubwayRouteAdvisor implements CallAdvisor {
 
 		log.info("SubwayRouteAdvisor 진입");
 
-		Double departureLat = (Double)request.context().get(DEPARTURE_LAT_KEY);
-		Double departureLon = (Double)request.context().get(DEPARTURE_LON_KEY);
-		Double destinationLat = (Double)request.context().get(DESTINATION_LAT_KEY);
-		Double destinationLon = (Double)request.context().get(DESTINATION_LON_KEY);
+		Double originLat = (Double)request.context().get(ORIGIN_LAT);
+		Double originLon = (Double)request.context().get(ORIGIN_LON);
+		Double destLat = (Double)request.context().get(DEST_LAT);
+		Double destLon = (Double)request.context().get(DEST_LON);
 
 		// 위경도 누락 시 패스
-		if (departureLat == null || departureLon == null || destinationLat == null || destinationLon == null) {
+		if (originLat == null || originLon == null || destLat == null || destLon == null) {
 			log.warn("위경도 정보 누락 → SubwayRouteAdvisor 생략");
 			return chain.nextCall(request);
 		}
 
 		// 역 이름들 조회
 		List<String> stationList = tmapTransitClient.getSubwayStations(
-			departureLon, departureLat, // startX, startY
-			destinationLon, destinationLat // endX, endY
+				originLon, originLat, // startX, startY
+				destLon, destLat // endX, endY
 		);
 
 

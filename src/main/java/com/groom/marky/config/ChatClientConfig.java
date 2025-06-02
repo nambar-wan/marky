@@ -2,6 +2,7 @@ package com.groom.marky.config;
 
 import java.util.List;
 
+import com.groom.marky.service.tool.SubwayRouteSearchTool;
 import com.groom.marky.service.advisor.*;
 import com.groom.marky.service.tool.ActivitySearchTool;
 import org.springframework.ai.chat.client.ChatClient;
@@ -10,6 +11,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,12 +50,15 @@ public class ChatClientConfig {
 		LocationResolverAdvisor locationResolverAdvisor,
 		ActivityDetailAdvisor activityDetailAdvisor,
 		RedisGeoSearchTool redisGeoSearchTool,
+		SubwayRouteSearchTool subwayRouteSearchTool,
 		PlaceVectorSearchTool placeVectorSearchTool,
 		ActivitySearchTool activitySearchTool,
-		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
+		MultiPurposeActionAdvisor multiPurposeActionAdvisor,
+		SubwayRouteAdvisor subwayRouteAdvisor) {
 
+		//
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,activitySearchTool))
+			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,activitySearchTool,subwayRouteSearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 
@@ -66,7 +71,8 @@ public class ChatClientConfig {
 				locationResolverAdvisor,
 				multiPurposeActionAdvisor,
 				activityDetailAdvisor,
-				multiPurposeActionAdvisor
+				multiPurposeActionAdvisor,
+				subwayRouteAdvisor
 			))
 			.build();
 	}

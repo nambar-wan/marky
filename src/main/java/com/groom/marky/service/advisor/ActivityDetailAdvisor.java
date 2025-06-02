@@ -45,9 +45,13 @@ public class ActivityDetailAdvisor implements CallAdvisor {
 
         log.info("[ActivityDetailAdvisor] 진입");
 
+
         Map<String, Object> originalContext = new HashMap<>(request.context());
         String intent = (String) originalContext.get("intent");
+
+
         log.info("[originalContext] : {} ", originalContext);
+
         // 프롬프트 상세히 쓰기..
         // 지피티한테 프롬프트 짜달라하기
         // 개선된 SystemMessage 프롬프트 (프롬프트만으로 해결)
@@ -57,14 +61,16 @@ public class ActivityDetailAdvisor implements CallAdvisor {
                 너는 intent 문장을 받아서 사용자 의도를 13개 활동 카테고리 중 하나로 정규화하는 역할만 수행한다.
                 아래 명세에 따라 JSON 객체를 생성해줘. **반드시 아래 조건을 지켜라.**
                 - 코드 블록이나 마크다운(```json 등)을 절대 사용하지 마.
+                - intent = "경로" 라면 activity_detail = "" 
                 [출력 형식]
                 {
                   "activity_detail": "스크린 야구"  // ← 값 예시
                 }
-                        
+
                 [카테고리 목록 및 매핑 규칙]
                 다음 13개 중 **가장 적절한 하나를 선택해서** "activity_detail"의 값으로 넣어라.
                 (절대 다른 값을 추가하거나 설명하지 마라.)
+
                  1. "클라이밍" - 암벽등반, 볼더링, 클라이밍짐 관련 모든 표현 
                  2. "스크린야구" - 야구연습, 배팅센터, 스크린베이스볼 관련 모든 표현 
                  3. "스크린골프" - 골프연습장, 골프 관련 모든 표현 
@@ -78,6 +84,7 @@ public class ActivityDetailAdvisor implements CallAdvisor {
                  11. "아쿠아리움" - 수족관, 해양박물관 관련 모든 표현 
                  12. "찜질방" - 사우나, 스파, 목욕탕, 온천 관련 모든 표현 
                  13. "시장" - 전통시장, 재래시장, 마켓, 장터 관련 모든 표현 
+                                  
                   절대 위 13개 외의 다른 값을 사용하지 마라.
                   키는 모두 포함되어야 하며, 값이 없을 경우 "null"로 작성해.
                     설명은 포함하지 마. 너는 툴 콜링을 사용하면 안돼. """),
@@ -98,6 +105,7 @@ public class ActivityDetailAdvisor implements CallAdvisor {
                 log.info("[ActivityDetailAdvisor] 지원하지 않는 액티비티 또는 intent 없음: {} - 건너뛰기", activityDetail);
                 return chain.nextCall(request);
             }
+
             log.info("[ActivityDetailAdvisor] 액티비티 상세 : {} ", activityDetail);
 
             originalContext.put(ACTIVITY_DETAIL, activityDetail);
