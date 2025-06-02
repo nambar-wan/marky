@@ -3,6 +3,11 @@ package com.groom.marky.service.impl;
 import static com.groom.marky.common.constant.MetadataKeys.*;
 import static com.groom.marky.domain.response.GooglePlacesApiResponse.*;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groom.marky.common.RedisKeyParser;
 import com.groom.marky.common.constant.GooglePlaceType;
 import com.groom.marky.domain.request.Rectangle;
+import com.groom.marky.domain.request.RefreshTokenInfo;
 import com.groom.marky.domain.response.GooglePlacesApiResponse;
 
 @Slf4j
@@ -33,13 +39,15 @@ import com.groom.marky.domain.response.GooglePlacesApiResponse;
 public class RedisService {
 
 	private final StringRedisTemplate redisTemplate;
+	private final ObjectMapper objectMapper;
 	private static final String RESTAURANT_RECT_ALL_KEY = "place:restaurant:rects:all";
 	private static final String RESTAURANT_RECT_PROCESSED_KEY = "place:restaurant:rects:processed";
 	private static final String OVER_LENGTH_PLACE_KEY = "place:overlength";
 
 	@Autowired
-	public RedisService(StringRedisTemplate redisTemplate) {
+	public RedisService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
 		this.redisTemplate = redisTemplate;
+		this.objectMapper = objectMapper;
 	}
 
 	public void setPlacesLocation(GooglePlaceType type, GooglePlacesApiResponse response) {
@@ -112,5 +120,18 @@ public class RedisService {
 		return allRects.stream()
 			.filter(rect -> !processedRectStrings.contains(rect.toString()))
 			.collect(Collectors.toSet());
+	}
+
+	public void setRefreshToken(RefreshTokenInfo tokenInfo) throws JsonProcessingException {
+
+		String userEmail = tokenInfo.getUserEmail();
+		long expirationMillis = tokenInfo.getExpiresAt() - System.currentTimeMillis();
+
+		String key = RedisKeyParser.getRefreshTokenKey(userEmail);
+
+		String value = objectMapper.writeValueAsString(tokenInfo);
+
+		redisTemplate.opsForValue().set(key, value, expirationMillis, TimeUnit.MILLISECONDS);
+
 	}
 }

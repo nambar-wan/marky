@@ -10,10 +10,23 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/marky
     username: postgres
     password: postgres
+
+    hikari:
+      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector
 
   ai:
     model:
@@ -36,6 +49,7 @@ spring:
           model: nomic-embed-text
           keep-alive: 5m
 
+
     vectorstore:
       pgvector:
         dimensions: 768
@@ -46,11 +60,25 @@ spring:
         table-name: vector_store
 #        remove-existing-vector-store-table: true
 
+
+
   data:
     redis:
       host: localhost
       port: 6379
 
+
+jwt:
+#  secret:
+#    access: ${JWT_SECRET_ACCESS}
+#    refresh: ${JWT_SECRET_REFRESH}
+
+  duration:
+    access: 604800000      # 5분 = 1000 * 60 * 5
+    refresh: 604800000  # 7일 = 1000 * 60 * 60 * 24 * 7
+
+
 logging:
   level:
     org.springframework.ai: DEBUG
+
