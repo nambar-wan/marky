@@ -69,13 +69,29 @@ public class TmapTransitClient {
 			JsonNode root = objectMapper.readTree(response.getBody());
 			List<String> stationList = new ArrayList<>();
 
+//			for (JsonNode path : root.path("metaData").path("plan").path("itineraries")) {
+//				for (JsonNode leg : path.path("legs")) {
+//					if ("SUBWAY".equalsIgnoreCase(leg.path("mode").asText())) {
+//						for (JsonNode stop : leg.path("passStopList")) {
+//							String name = stop.path("stationName").asText();
+//							if (!name.isBlank()) {
+//								stationList.add(name);
+//							}
+//						}
+//					}
+//				}
+//			}
+
 			for (JsonNode path : root.path("metaData").path("plan").path("itineraries")) {
 				for (JsonNode leg : path.path("legs")) {
 					if ("SUBWAY".equalsIgnoreCase(leg.path("mode").asText())) {
-						for (JsonNode stop : leg.path("passStopList")) {
-							String name = stop.path("stationName").asText();
-							if (!name.isBlank()) {
-								stationList.add(name);
+						JsonNode stationListNode = leg.path("passStopList").path("stationList");
+						if (stationListNode.isArray()) {
+							for (JsonNode stop : stationListNode) {
+								String name = stop.path("stationName").asText();
+								if (!name.isBlank()) {
+									stationList.add(name);
+								}
 							}
 						}
 					}

@@ -69,10 +69,10 @@ public class UserIntentAdvisor implements CallAdvisor {
 					- 사용자가 "A역에서 B역까지 가는 법", "A~B 지하철 경로", "A역에서 B역까지 지하철 경로 알려줘", "몇시 요일 A역에서 B역까지 지하철 경로 알려줘"등을 말하면
 					- intent : "경로"
 					- mood는 비워두고 "" 처리해줘.
+					- location는 비워두고 "" 처리해줘
 					- intent가 "경로"라면 출발지를 유추해서 origin 키로,  도착지를 유추해서 destination 키로 저장해줘.
-					- intent: "경로"면 location은 빈값으로 넣어줘
-					- timeSlot: "시간"
-					- dayType: "요일"
+					- timeSlot: "시간" 사용자가 입력한게 없다면 ""
+					- dayType: "요일" 사용자가 입력한게 없다면 ""
 					 
 				
 					[위치 정규화 안내]
@@ -86,7 +86,8 @@ public class UserIntentAdvisor implements CallAdvisor {
 				
 					출력 예시:
 					{ "intent": "식당", "location": "합정역", "mood": "조용하고 분위기 좋은" }
-					{ "intent": "경로", "location": "", "origin": "강남역", "destination": "역삼역", "mood": ""}
+					{ "intent": "경로", "location": "","origin": "강남역", "destination": "역삼역", "mood": "", "timeSlot" : "",
+					  "dayType": ""}
 					
 				
 					반드시 JSON만 출력하고, 설명은 포함하지 마.
@@ -103,11 +104,13 @@ public class UserIntentAdvisor implements CallAdvisor {
 			return chain.nextCall(request);
 		}
 
+
+
 		try {
 			Map<String, String> extracted = objectMapper.readValue(json, new TypeReference<>() {});
 			String intent = extracted.get(INTENT_KEY);
-			String location = extracted.get(LOCATION_KEY);
-			String mood = extracted.get(MOOD_KEY);
+			String location = extracted.getOrDefault(LOCATION_KEY,"");
+			String mood = extracted.getOrDefault(MOOD_KEY,"");
 			String origin = extracted.get(ORIGIN);
 			String destination = extracted.get(DESTINATION);
 			String timeSlot = extracted.get(TIME_SLOT);

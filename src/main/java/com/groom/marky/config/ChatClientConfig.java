@@ -53,7 +53,8 @@ public class ChatClientConfig {
 		SubwayRouteSearchTool subwayRouteSearchTool,
 		PlaceVectorSearchTool placeVectorSearchTool,
 		ActivitySearchTool activitySearchTool,
-		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
+		MultiPurposeActionAdvisor multiPurposeActionAdvisor,
+		SubwayRouteAdvisor subwayRouteAdvisor) {
 
 		//
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
@@ -70,7 +71,8 @@ public class ChatClientConfig {
 				locationResolverAdvisor,
 				multiPurposeActionAdvisor,
 				activityDetailAdvisor,
-				multiPurposeActionAdvisor
+				multiPurposeActionAdvisor,
+				subwayRouteAdvisor
 			))
 			.build();
 	}
