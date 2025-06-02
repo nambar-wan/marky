@@ -66,7 +66,7 @@ public class PlaceVectorSearchTool {
 			SearchRequest.builder()
 				.query(mood)
 				.topK(3)
-				.similarityThreshold(0.6)
+				.similarityThreshold(0.3)
 				.filterExpression(op.build())
 				.build());
 
