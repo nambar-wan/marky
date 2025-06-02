@@ -30,6 +30,7 @@ import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
 import com.groom.marky.service.tool.PlaceVectorSearchTool;
 import com.groom.marky.service.tool.RedisGeoSearchTool;
+import com.groom.marky.service.tool.RestaurantSearchTool;
 
 @Configuration
 public class ChatClientConfig {
@@ -53,12 +54,13 @@ public class ChatClientConfig {
 		SubwayRouteSearchTool subwayRouteSearchTool,
 		PlaceVectorSearchTool placeVectorSearchTool,
 		ActivitySearchTool activitySearchTool,
-		MultiPurposeActionAdvisor multiPurposeActionAdvisor,
-		SubwayRouteAdvisor subwayRouteAdvisor) {
+		SubwayRouteAdvisor subwayRouteAdvisor,
+		RestaurantSearchTool restaurantSearchTool,
+		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
 
-		//
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,activitySearchTool,subwayRouteSearchTool))
+			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,
+				activitySearchTool, subwayRouteSearchTool, restaurantSearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 
@@ -70,9 +72,8 @@ public class ChatClientConfig {
 				userIntentAdvisor,
 				locationResolverAdvisor,
 				multiPurposeActionAdvisor,
-				activityDetailAdvisor,
-				multiPurposeActionAdvisor,
-				subwayRouteAdvisor
+				subwayRouteAdvisor,
+				activityDetailAdvisor
 			))
 			.build();
 	}
