@@ -28,6 +28,8 @@ import com.groom.marky.service.GooglePlaceSearchService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.groom.marky.controller.GoogleMapController.CAFE_KEYWORD;
+
 @Slf4j
 @Service
 public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
@@ -76,7 +78,16 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		"places.servesLunch",
 		"places.servesVegetarianFood",
 		"places.servesWine",
-		"places.takeout"
+		"places.takeout",
+
+		"places.regularOpeningHours.weekdayDescriptions",
+		"places.parkingOptions.freeParkingLot",
+		"places.parkingOptions.paidParkingLot",
+		"places.parkingOptions.freeStreetParking",
+		"places.parkingOptions.paidStreetParking",
+		"places.parkingOptions.valetParking",
+		"places.parkingOptions.freeGarageParking",
+		"places.parkingOptions.paidGarageParking"
 	);
 
 	private String apiKey;

@@ -1,15 +1,15 @@
 package com.groom.marky.domain.response;
 
-import org.springframework.stereotype.Component;
 
 import com.groom.marky.common.constant.GooglePlaceType;
+import org.springframework.stereotype.Component;
 
 @Component
 public class RestaurantDescriptionBuilder implements DescriptionBuilder{
 
-	@Override
-	public String buildDescription(GooglePlacesApiResponse.Place place) {
-		StringBuilder sb = new StringBuilder();
+    @Override
+    public String buildDescription(GooglePlacesApiResponse.Place place) {
+        StringBuilder sb = new StringBuilder();
 
 		if(place.userRatingCount() == 0) {
 			sb.append(place.displayName().text()).append("은(는) ")

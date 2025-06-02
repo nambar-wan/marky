@@ -36,7 +36,8 @@ public class PlaceVectorSearchTool {
 	)
 	public List<Document> similaritySearch(
 		@ToolParam(description = "사용자가 원하는 분위기", required = true) String mood,
-		@ToolParam(description = "지정된 장소 리스트. 해당 아이디로 벡터 데이터베이스 메타데이터 조회. 대상 선정", required = true) List<String> ids) {
+		@ToolParam(description = "지정된 장소 리스트. 해당 아이디로 벡터 데이터베이스 메타데이터 조회. 대상 선정", required = true) List<String> ids
+	) {
 		log.info("[similaritySearch Tool 호출] mood : {}, ids : {}", mood, ids.size());
 
 
@@ -47,6 +48,7 @@ public class PlaceVectorSearchTool {
 
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		FilterExpressionBuilder.Op op = null;
+
 
 
 		// 메타데이터에서 구글 플레이스 ID 검색
@@ -65,8 +67,8 @@ public class PlaceVectorSearchTool {
 		return vectorStore.similaritySearch(
 			SearchRequest.builder()
 				.query(mood)
-				.topK(3)
-				.similarityThreshold(0.3)
+				.topK(5)
+				.similarityThreshold(0.6)
 				.filterExpression(op.build())
 				.build());
 

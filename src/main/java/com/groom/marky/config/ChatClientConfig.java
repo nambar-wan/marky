@@ -5,6 +5,9 @@ import java.util.List;
 import com.groom.marky.service.advisor.*;
 import com.groom.marky.service.tool.ActivitySearchTool;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
@@ -17,6 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.groom.marky.common.TmapGeocodingClient;
 import com.groom.marky.common.TmapTransitClient;
+import com.groom.marky.service.KakaoPlaceSearchService;
+import com.groom.marky.service.advisor.LocationResolverAdvisor;
+import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
+import com.groom.marky.service.advisor.SubwayRouteAdvisor;
+import com.groom.marky.service.advisor.SystemRoleAdvisor;
+import com.groom.marky.service.advisor.UserIntentAdvisor;
 import com.groom.marky.service.tool.PlaceVectorSearchTool;
 import com.groom.marky.service.tool.RedisGeoSearchTool;
 
@@ -24,7 +33,15 @@ import com.groom.marky.service.tool.RedisGeoSearchTool;
 public class ChatClientConfig {
 
 	@Bean
+	public ChatMemory chatMemory() {
+		return MessageWindowChatMemory.builder()
+			.maxMessages(10)
+			.build();
+	}
+
+	@Bean
 	public ChatClient chatClient(
+		ChatMemory chatMemory,
 		ChatModel model,
 		SystemRoleAdvisor systemRoleAdvisor,
 		UserIntentAdvisor userIntentAdvisor,
@@ -43,9 +60,11 @@ public class ChatClientConfig {
 		return ChatClient.builder(model)
 			.defaultOptions(chatOptions)
 			.defaultAdvisors(List.of(
+        MessageChatMemoryAdvisor.builder(chatMemory).build(),
 				systemRoleAdvisor,
 				userIntentAdvisor,
 				locationResolverAdvisor,
+				multiPurposeActionAdvisor,
 				activityDetailAdvisor,
 				multiPurposeActionAdvisor
 			))
@@ -82,8 +101,8 @@ public class ChatClientConfig {
 	}
 
 	@Bean
-	public LocationResolverAdvisor locationResolverAdvisor(TmapGeocodingClient tmapGeocodingClient) {
-		return new LocationResolverAdvisor(tmapGeocodingClient);
+	public LocationResolverAdvisor locationResolverAdvisor(KakaoPlaceSearchService kakaoPlaceSearchService) {
+		return new LocationResolverAdvisor(kakaoPlaceSearchService);
 	}
 
 	@Bean
