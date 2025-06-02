@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import io.jsonwebtoken.JwtException;
+
 @RestControllerAdvice
 public class ApiExceptionAdvice {
 
@@ -46,6 +48,19 @@ public class ApiExceptionAdvice {
 	public ResponseEntity<?> handleJsonProcessing(JsonProcessingException e) {
 		return ResponseEntity.badRequest()
 			.body(Map.of("message", "JSON 처리 중 오류가 발생했습니다.", "detail", e.getOriginalMessage()));
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException e) {
+		return ResponseEntity.badRequest()
+			.body(Map.of("message", e.getMessage()));
+	}
+
+
+	@ExceptionHandler(JwtException.class)
+	public ResponseEntity<?> handleJwt(JwtException e) {
+		return ResponseEntity.badRequest()
+			.body(Map.of("message", e.getMessage()));
 	}
 
 }

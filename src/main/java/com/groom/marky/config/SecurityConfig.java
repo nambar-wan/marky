@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.groom.marky.common.security.jwt.JwtAuthenticationFilter;
 import com.groom.marky.common.security.jwt.JwtProvider;
+import com.groom.marky.service.impl.RedisService;
 
 @Configuration
 @EnableWebSecurity
@@ -33,8 +34,8 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public JwtAuthenticationFilter jwtAuthenticationFilter(JwtProvider jwtProvider) {
-		return new JwtAuthenticationFilter(jwtProvider);
+	public JwtAuthenticationFilter jwtAuthenticationFilter(JwtProvider jwtProvider, RedisService redisService) {
+		return new JwtAuthenticationFilter(jwtProvider, redisService);
 	}
 
 	@Bean
@@ -47,7 +48,7 @@ public class SecurityConfig {
 				.permitAll()
 				.anyRequest().authenticated()
 			)
-			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // 위치 주의
+			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

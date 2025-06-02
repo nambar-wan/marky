@@ -7,6 +7,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.groom.marky.service.impl.RedisService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,10 +17,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtProvider jwtProvider;
+	private final RedisService redisService;
 
 	@Autowired
-	public JwtAuthenticationFilter(JwtProvider jwtProvider) {
+	public JwtAuthenticationFilter(JwtProvider jwtProvider, RedisService redisService) {
 		this.jwtProvider = jwtProvider;
+		this.redisService = redisService;
 	}
 
 	@Override
@@ -39,20 +43,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		 */
 
 		// 1. 토큰 추출
-		String accessToken = jwtProvider.resolveToken(request);
+		String accessToken = jwtProvider.resolveAccessToken(request);
 
 		// 2. 토큰 검증
 		boolean isValid = jwtProvider.validateAccessToken(accessToken);
 
-		// 3. 토큰 검증 실패 시 예외 전달
-		if (!isValid) {
-			throw new IllegalArgumentException("invalid access token");
+		// 3. 블랙리스트 여부 확인
+		boolean isBlacklisted = redisService.isInBlacklist(accessToken);
+
+		// 4. 토큰 검증 실패 시 예외 전달
+		if (!isValid || isBlacklisted) {
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+			response.setContentType("application/json;charset=UTF-8");
+			response.getWriter().write("{\"message\": \"유효하지 않거나 로그아웃된 토큰입니다.\"}");
+
+			return;
 		}
 
-		// 4. 토큰에 포함된 userEmail, userRole 을 바탕으로 Authentication 객체 생성
+		// 5. 토큰에 포함된 userEmail, userRole 을 바탕으로 Authentication 객체 생성
 		Authentication authentication = jwtProvider.getAuthentication(accessToken);
 
-		// 5. SecurityContext 등록 후 다음 체인 호출
+		// 6. SecurityContext 등록 후 다음 체인 호출
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 
 		filterChain.doFilter(request, response);

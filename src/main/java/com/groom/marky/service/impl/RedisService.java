@@ -20,7 +20,6 @@ import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.RedisGeoCommands;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.domain.geo.Metrics;
 import org.springframework.stereotype.Service;
@@ -133,5 +132,50 @@ public class RedisService {
 
 		redisTemplate.opsForValue().set(key, value, expirationMillis, TimeUnit.MILLISECONDS);
 
+	}
+
+	public void deleteRefreshToken(RefreshTokenInfo tokenInfo) throws JsonProcessingException {
+
+		String userEmail = tokenInfo.getUserEmail();
+		String refreshTokenKey = RedisKeyParser.getRefreshTokenKey(userEmail);
+		String savedRefreshTokenInfo = redisTemplate.opsForValue().get(refreshTokenKey);
+
+		if (savedRefreshTokenInfo == null) {
+			throw new IllegalArgumentException("해당 사용자의 리프레쉬 토큰이 존재하지 않습니다.");
+		}
+
+		RefreshTokenInfo refreshTokenInfo = objectMapper.readValue(savedRefreshTokenInfo, RefreshTokenInfo.class);
+
+		boolean ipMatch = refreshTokenInfo.getIp().equals(tokenInfo.getIp());
+		boolean emailMatch = refreshTokenInfo.getUserEmail().equals(tokenInfo.getUserEmail());
+		boolean agentMatch = refreshTokenInfo.getUserAgent().equals(tokenInfo.getUserAgent());
+
+		if (!ipMatch || !emailMatch || !agentMatch) {
+			throw new IllegalStateException("요청자 정보와 저장된 토큰 정보가 일치하지 않습니다.");
+		}
+
+		// 리프레쉬 토큰 삭제
+		redisTemplate.delete(refreshTokenKey);
+
+		// 기존 액세스 토큰은 블랙리스트 등록
+		registerBlacklist(tokenInfo);
+
+	}
+
+	private void registerBlacklist(RefreshTokenInfo tokenInfo) {
+		String accessToken = tokenInfo.getAccessToken();
+		long expiresAt = tokenInfo.getExpiresAt();
+		long expirationMillis = expiresAt - System.currentTimeMillis();
+
+		String blacklistKey = RedisKeyParser.getBlacklistKey(accessToken);
+
+		redisTemplate.opsForValue().set(blacklistKey,"logout", expirationMillis, TimeUnit.MILLISECONDS);
+	}
+
+	public boolean isInBlacklist(String accessToken) {
+
+		String key = RedisKeyParser.getBlacklistKey(accessToken);
+
+		return Boolean.TRUE.equals(redisTemplate.hasKey(key));
 	}
 }

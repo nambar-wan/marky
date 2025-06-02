@@ -2,6 +2,7 @@ package com.groom.marky.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,7 @@ import com.groom.marky.domain.response.UserResponse;
 import com.groom.marky.service.UserService;
 import com.groom.marky.service.impl.RedisService;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
@@ -87,8 +89,10 @@ public class AuthController {
 
 		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
 			.userEmail(userEmail)
+			.accessToken(accessToken)
 			.refreshToken(refreshToken)
 			.ip(ip)
+			.role(role)
 			.userAgent(userAgent)
 			.expiresAt(expiresAt)
 			.build();
@@ -98,4 +102,48 @@ public class AuthController {
 		return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
 
 	}
+
+	/**
+	 * 로그아웃 -> 리프레쉬 토큰 삭제
+	 * 기존 토큰 -> 블랙리스트 등록
+	 */
+	@PostMapping("/logout")
+	public ResponseEntity<Void> logout(HttpServletRequest httpRequest) throws JsonProcessingException {
+
+		// 1. 리프레쉬 토큰 검증
+		String accessToken = jwtProvider.resolveAccessToken(httpRequest);
+		String refreshToken = jwtProvider.resolveRefreshToken(httpRequest);
+
+		boolean isValid = jwtProvider.validateRefreshToken(refreshToken);
+
+		if (!isValid) {
+			throw new JwtException("리프레쉬 토큰이 유효하지 않습니다.");
+		}
+
+
+		// 2. 리프레쉬 토큰 삭제
+		String ip = httpRequest.getRemoteAddr();
+		String userAgent = httpRequest.getHeader("User-Agent");
+		String userEmail = jwtProvider.getSubjectFromRefreshToken(refreshToken);
+		long expiresAt = jwtProvider.getRefreshTokenExpiry(refreshToken);
+		Role role = jwtProvider.getRoleFromRefreshToken(refreshToken);
+
+		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
+			.accessToken(accessToken)
+			.refreshToken(refreshToken)
+			.userEmail(userEmail)
+			.role(role)
+			.ip(ip)
+			.userAgent(userAgent)
+			.expiresAt(expiresAt)
+			.build();
+
+		redisService.deleteRefreshToken(tokenInfo);
+
+		SecurityContextHolder.clearContext();
+
+		return ResponseEntity.ok().build();
+	}
+
+
 }

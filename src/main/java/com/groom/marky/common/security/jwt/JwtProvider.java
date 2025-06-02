@@ -78,8 +78,16 @@ public class JwtProvider {
 	/**
 	 * 요청 헤더에서 JWT 추출 : Authorization 헤더로부터 추출
 	 */
-	public String resolveToken(HttpServletRequest request) {
+	public String resolveAccessToken(HttpServletRequest request) {
 		String bearer = request.getHeader("Authorization");
+		if (bearer != null && bearer.startsWith("Bearer ")) {
+			return bearer.substring(7);
+		}
+		return null;
+	}
+
+	public String resolveRefreshToken(HttpServletRequest request) {
+		String bearer = request.getHeader("Refresh-Token");
 		if (bearer != null && bearer.startsWith("Bearer ")) {
 			return bearer.substring(7);
 		}
@@ -191,7 +199,7 @@ public class JwtProvider {
 		return claims.getExpiration().getTime();
 	}
 
-	public String getSubject(String accessToken) {
+	public String getSubjectFromAccessToken(String accessToken) {
 
 		if (!validateAccessToken(accessToken)) {
 			throw new IllegalArgumentException("invalid access token");
@@ -205,7 +213,21 @@ public class JwtProvider {
 		return claims.getSubject();
 	}
 
-	public Role getRole(String accessToken) {
+	public String getSubjectFromRefreshToken(String refreshToken) {
+
+		if (!validateRefreshToken(refreshToken)) {
+			throw new IllegalArgumentException("invalid access token");
+		}
+
+		Claims claims =
+			Jwts.parserBuilder()
+				.setSigningKey(refreshSecret)
+				.build().parseClaimsJws(refreshToken).getBody();
+
+		return claims.getSubject();
+	}
+
+	public Role getRoleFromAccessToken(String accessToken) {
 
 		if (!validateAccessToken(accessToken)) {
 			throw new IllegalArgumentException("invalid access token");
@@ -220,4 +242,22 @@ public class JwtProvider {
 
 		return Role.valueOf(roleString);
 	}
+
+
+	public Role getRoleFromRefreshToken(String refreshToken) {
+
+		if (!validateRefreshToken(refreshToken)) {
+			throw new IllegalArgumentException("invalid refresh token");
+		}
+
+		Claims claims =
+			Jwts.parserBuilder()
+				.setSigningKey(refreshSecret)
+				.build().parseClaimsJws(refreshToken).getBody();
+
+		String roleString = claims.get("role", String.class);
+
+		return Role.valueOf(roleString);
+	}
+
 }
