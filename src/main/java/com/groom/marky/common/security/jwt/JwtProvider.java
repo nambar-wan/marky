@@ -174,26 +174,6 @@ public class JwtProvider {
 		return new UsernamePasswordAuthenticationToken(userDetails, accessToken, userDetails.getAuthorities());
 	}
 
-	public String regenerateAccessToken(String refreshToken, String userEmail, Role role, String ip, String userAgent) {
-
-		// 1. refresh token 검증 끝. 다시 만들기만 하면 됨.
-		if (!validateRefreshToken(refreshToken)) {
-			throw new IllegalArgumentException("invalid refresh token");
-		}
-
-		CreateToken createAccessToken = new CreateToken(userEmail, role, ip, userAgent);
-
-		return generateAccessToken(createAccessToken);
-	}
-
-	public String regenerateRefreshToken(String userEmail, Role role, String ip, String userAgent) {
-
-
-		CreateToken createAccessToken = new CreateToken(userEmail, role, ip, userAgent);
-
-		return generateAccessToken(createAccessToken);
-	}
-
 	public Claims getClaimsFromAccessToken(String accessToken) {
 		try {
 			return Jwts.parser()

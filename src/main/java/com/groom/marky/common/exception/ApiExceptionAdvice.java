@@ -70,4 +70,11 @@ public class ApiExceptionAdvice {
 			.body(Map.of("message", e.getMessage()));
 	}
 
+
+	@ExceptionHandler(OAuthProcessingException.class)
+	public ResponseEntity<?> handleOAuthProcessing(OAuthProcessingException e) {
+		return ResponseEntity.badRequest()
+			.body(Map.of("message", e.getMessage()));
+	}
+
 }

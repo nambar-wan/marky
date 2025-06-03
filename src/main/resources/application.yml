@@ -12,7 +12,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -60,8 +60,6 @@ spring:
         table-name: vector_store
 #        remove-existing-vector-store-table: true
 
-
-
   data:
     redis:
       host: localhost
@@ -69,13 +67,18 @@ spring:
 
 
 jwt:
-#  secret:
-#    access: ${JWT_SECRET_ACCESS}
-#    refresh: ${JWT_SECRET_REFRESH}
-
   duration:
-    access: 10000      # 5분 = 1000 * 60 * 5
+    access: 36000000      # 5분 = 1000 * 60 * 5
     refresh: 604800000  # 7일 = 1000 * 60 * 60 * 24 * 7
+
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+    redirect-uri: "http://localhost:8080/auth/google/callback"
+    token-uri: "https://oauth2.googleapis.com/token"
+    user-info-uri: "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
 logging:

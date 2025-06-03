@@ -41,6 +41,9 @@ public class User {
 	// google oauth 로그인의 경우 패스워드가 비어있음.
 	private String password;
 
+	// 구글 로그인 유저만 값 있음
+	private String googleId;
+
 	@Column(nullable = false)
 	@Enumerated(EnumType.STRING)
 	private LoginType loginType;
