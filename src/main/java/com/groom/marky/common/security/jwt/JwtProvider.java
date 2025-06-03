@@ -13,9 +13,12 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.groom.marky.domain.Role;
+import com.groom.marky.domain.request.CreateToken;
+import com.groom.marky.domain.response.AccessTokenInfo;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -47,13 +50,15 @@ public class JwtProvider {
 	/**
 	 * 액세스 토큰 생성 : 유저메일을 페이로드에 담기
 	 */
-	public String generateAccessToken(String userEmail, Role role) {
+	public String generateAccessToken(CreateToken createToken) {
 		// 1. 유효시간 설정
 		Date now = new Date();
 
 		return Jwts.builder()
-			.setSubject(userEmail) // Subject 는 클레임의 일. sub : 주체, 대상, 토큰의 주인
-			.claim("role", role.name())
+			.setSubject(createToken.getUserEmail()) // Subject 는 클레임의 일. sub : 주체, 대상, 토큰의 주인
+			.claim("role", createToken.getRole().name())
+			.claim("ip", createToken.getIp())
+			.claim("userAgent", createToken.getUserAgent())
 			.setIssuedAt(now)
 			.setExpiration(new Date(now.getTime() + accessDuration))
 			.signWith(accessSecret, algorithm) // HMAC 계열 알고리즘
@@ -169,24 +174,37 @@ public class JwtProvider {
 		return new UsernamePasswordAuthenticationToken(userDetails, accessToken, userDetails.getAuthorities());
 	}
 
-	public String regenerateAccessToken(String refreshToken) {
+	public String regenerateAccessToken(String refreshToken, String userEmail, Role role, String ip, String userAgent) {
 
 		// 1. refresh token 검증 끝. 다시 만들기만 하면 됨.
 		if (!validateRefreshToken(refreshToken)) {
 			throw new IllegalArgumentException("invalid refresh token");
 		}
 
-		Claims claims = Jwts.parserBuilder()
-			.setSigningKey(refreshSecret)
-			.build()
-			.parseClaimsJws(refreshToken)
-			.getBody();
+		CreateToken createAccessToken = new CreateToken(userEmail, role, ip, userAgent);
 
-		String userEmail = claims.getSubject();
-		String roleString = claims.get("role", String.class);
-		Role role = Role.valueOf(roleString);
+		return generateAccessToken(createAccessToken);
+	}
 
-		return generateAccessToken(userEmail, role);
+	public String regenerateRefreshToken(String userEmail, Role role, String ip, String userAgent) {
+
+
+		CreateToken createAccessToken = new CreateToken(userEmail, role, ip, userAgent);
+
+		return generateAccessToken(createAccessToken);
+	}
+
+	public Claims getClaimsFromAccessToken(String accessToken) {
+		try {
+			return Jwts.parser()
+				.setSigningKey(accessSecret)
+				.parseClaimsJws(accessToken)
+				.getBody();
+		} catch (ExpiredJwtException e) {
+			return e.getClaims();
+		} catch (JwtException | IllegalArgumentException e) {
+			throw new JwtException("토큰 파싱 실패", e);
+		}
 	}
 
 	public long getRefreshTokenExpiry(String refreshToken) {
@@ -195,6 +213,19 @@ public class JwtProvider {
 			.build()
 			.parseClaimsJws(refreshToken)
 			.getBody();
+
+		return claims.getExpiration().getTime();
+	}
+
+	public long getAccessTokenExpiry(String accessToken) {
+		log.info("getAccessTokenExpiry 진입");
+		Claims claims = Jwts.parserBuilder()
+			.setSigningKey(accessSecret)
+			.build()
+			.parseClaimsJws(accessToken) // 예외 발생 가능. 토큰 만료되었거나 등등..
+			.getBody();
+
+		log.info("getAccessTokenExpiry 탈출");
 
 		return claims.getExpiration().getTime();
 	}
@@ -260,4 +291,69 @@ public class JwtProvider {
 		return Role.valueOf(roleString);
 	}
 
+	// 검증은 해당 메서드 역할이 아니다.
+	public AccessTokenInfo getAccessTokenInfo(String accessToken) {
+
+		Claims claims =	Jwts.parserBuilder()
+							.setSigningKey(accessSecret)
+							.build().parseClaimsJws(accessToken).getBody();
+
+		String userEmail = claims.getSubject();
+		String ip = claims.get("ip", String.class);
+		Role role = Role.valueOf(claims.get("role", String.class));
+		String userAgent = claims.get("userAgent", String.class);
+		long expireAt = claims.getExpiration().getTime();
+
+		return AccessTokenInfo.builder()
+			.userEmail(userEmail)
+			.ip(ip)
+			.role(role)
+			.userAgent(userAgent)
+			.expiresAt(expireAt)
+			.build();
+
+	}
+
+	public boolean validateAccessTokenAllowExpired(String accessToken) {
+		try {
+			Jwts.parserBuilder()
+				.setSigningKey(accessSecret)
+				.build()
+				.parseClaimsJws(accessToken);
+			return true;
+		} catch (ExpiredJwtException e) {
+			log.warn("JWT 토큰이 만료되었지만 서명은 유효합니다: {}", e.getMessage());
+			return true;
+		} catch (UnsupportedJwtException e) {
+			log.warn("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
+		} catch (MalformedJwtException e) {
+			log.warn("JWT 형식이 올바르지 않습니다: {}", e.getMessage());
+		} catch (SignatureException e) {
+			log.warn("JWT 서명이 유효하지 않습니다: {}", e.getMessage());
+		} catch (IllegalArgumentException e) {
+			log.warn("JWT claims 문자열이 비었습니다: {}", e.getMessage());
+		}
+		return false;
+	}
+
+	public Claims getClaimsFromAllowedExpiredAccessToken(String accessToken) {
+		try {
+			return Jwts.parserBuilder()
+				.setSigningKey(accessSecret)
+				.build()
+				.parseClaimsJws(accessToken).getBody();
+		} catch (ExpiredJwtException e) {
+			log.warn("JWT 토큰이 만료되었지만 서명은 유효합니다: {}", e.getMessage());
+			return e.getClaims();
+		} catch (UnsupportedJwtException e) {
+			log.warn("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
+		} catch (MalformedJwtException e) {
+			log.warn("JWT 형식이 올바르지 않습니다: {}", e.getMessage());
+		} catch (SignatureException e) {
+			log.warn("JWT 서명이 유효하지 않습니다: {}", e.getMessage());
+		} catch (IllegalArgumentException e) {
+			log.warn("JWT claims 문자열이 비었습니다: {}", e.getMessage());
+		}
+		throw new JwtException("유효하지 않은 Access Token 입니다.");
+	}
 }

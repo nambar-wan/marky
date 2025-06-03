@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.jsonwebtoken.JwtException;
+import jakarta.persistence.EntityNotFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionAdvice {
@@ -59,6 +60,12 @@ public class ApiExceptionAdvice {
 
 	@ExceptionHandler(JwtException.class)
 	public ResponseEntity<?> handleJwt(JwtException e) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+			.body(Map.of("message", e.getMessage()));
+	}
+
+	@ExceptionHandler(EntityNotFoundException.class)
+	public ResponseEntity<?> handleEntityNotFound(EntityNotFoundException e) {
 		return ResponseEntity.badRequest()
 			.body(Map.of("message", e.getMessage()));
 	}

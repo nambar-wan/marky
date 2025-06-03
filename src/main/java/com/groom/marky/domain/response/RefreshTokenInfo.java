@@ -1,4 +1,4 @@
-package com.groom.marky.domain.request;
+package com.groom.marky.domain.response;
 
 import com.groom.marky.domain.Role;
 
@@ -15,11 +15,10 @@ import lombok.Setter;
 @Builder
 public class RefreshTokenInfo {
 
-	private String accessToken;
 	private String refreshToken;
 	private String userEmail;
-	private Role role;
+	private long expiresAt;
 	private String ip;
 	private String userAgent;
-	private long expiresAt;
+	private Role role;
 }

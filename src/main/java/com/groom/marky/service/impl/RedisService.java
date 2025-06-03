@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groom.marky.common.RedisKeyParser;
 import com.groom.marky.common.constant.GooglePlaceType;
 import com.groom.marky.domain.request.Rectangle;
-import com.groom.marky.domain.request.RefreshTokenInfo;
+import com.groom.marky.domain.response.RefreshTokenInfo;
 import com.groom.marky.domain.response.GooglePlacesApiResponse;
 
 @Slf4j
@@ -125,47 +125,37 @@ public class RedisService {
 
 		String userEmail = tokenInfo.getUserEmail();
 		long expirationMillis = tokenInfo.getExpiresAt() - System.currentTimeMillis();
-
 		String key = RedisKeyParser.getRefreshTokenKey(userEmail);
-
 		String value = objectMapper.writeValueAsString(tokenInfo);
 
 		redisTemplate.opsForValue().set(key, value, expirationMillis, TimeUnit.MILLISECONDS);
 
 	}
 
-	public void deleteRefreshToken(RefreshTokenInfo tokenInfo) throws JsonProcessingException {
+	// 리프레쉬 토큰 삭제 및 액세스 토큰 블랙리스트 등록
+	public void deleteRefreshToken(RefreshTokenInfo tokenInfo) {
 
 		String userEmail = tokenInfo.getUserEmail();
 		String refreshTokenKey = RedisKeyParser.getRefreshTokenKey(userEmail);
-		String savedRefreshTokenInfo = redisTemplate.opsForValue().get(refreshTokenKey);
+		/*String savedRefreshTokenInfo = redisTemplate.opsForValue().get(refreshTokenKey);
 
 		if (savedRefreshTokenInfo == null) {
 			throw new IllegalArgumentException("해당 사용자의 리프레쉬 토큰이 존재하지 않습니다.");
 		}
-
-		RefreshTokenInfo refreshTokenInfo = objectMapper.readValue(savedRefreshTokenInfo, RefreshTokenInfo.class);
-
-		boolean ipMatch = refreshTokenInfo.getIp().equals(tokenInfo.getIp());
-		boolean emailMatch = refreshTokenInfo.getUserEmail().equals(tokenInfo.getUserEmail());
-		boolean agentMatch = refreshTokenInfo.getUserAgent().equals(tokenInfo.getUserAgent());
-
-		if (!ipMatch || !emailMatch || !agentMatch) {
-			throw new IllegalStateException("요청자 정보와 저장된 토큰 정보가 일치하지 않습니다.");
-		}
-
+*/
 		// 리프레쉬 토큰 삭제
 		redisTemplate.delete(refreshTokenKey);
 
-		// 기존 액세스 토큰은 블랙리스트 등록
-		registerBlacklist(tokenInfo);
-
 	}
 
-	private void registerBlacklist(RefreshTokenInfo tokenInfo) {
-		String accessToken = tokenInfo.getAccessToken();
-		long expiresAt = tokenInfo.getExpiresAt();
+	public void registerBlacklist(String accessToken, long expiresAt) {
+
 		long expirationMillis = expiresAt - System.currentTimeMillis();
+
+		if (expirationMillis <= 0) {
+			log.warn("만료된 access token을 블랙리스트에 등록할 수 없습니다.");
+			return;
+		}
 
 		String blacklistKey = RedisKeyParser.getBlacklistKey(accessToken);
 
@@ -177,5 +167,23 @@ public class RedisService {
 		String key = RedisKeyParser.getBlacklistKey(accessToken);
 
 		return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+	}
+
+	public RefreshTokenInfo getRefreshToken(String userEmail) throws JsonProcessingException {
+
+		String key = RedisKeyParser.getRefreshTokenKey(userEmail);
+		String savedRefreshTokenInfo = redisTemplate.opsForValue().get(key);
+
+		if (savedRefreshTokenInfo == null) {
+			throw new IllegalArgumentException("해당 사용자의 리프레쉬 토큰이 레디스 내부에 존재하지 않습니다.");
+		}
+
+		return objectMapper.readValue(savedRefreshTokenInfo, RefreshTokenInfo.class);
+
+	}
+
+	public void deleteRefreshTokenByKey(String userEmail) {
+		String key = RedisKeyParser.getRefreshTokenKey(userEmail);
+		redisTemplate.delete(key);
 	}
 }
