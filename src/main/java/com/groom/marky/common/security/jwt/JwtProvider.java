@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.groom.marky.domain.Role;
 import com.groom.marky.domain.request.CreateToken;
 import com.groom.marky.domain.response.AccessTokenInfo;
+import com.groom.marky.domain.response.RefreshTokenInfo;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -187,6 +188,8 @@ public class JwtProvider {
 		}
 	}
 
+
+
 	public long getRefreshTokenExpiry(String refreshToken) {
 		Claims claims = Jwts.parserBuilder()
 			.setSigningKey(refreshSecret)
@@ -294,6 +297,29 @@ public class JwtProvider {
 
 	}
 
+	// 검증은 해당 메서드 역할이 아니다.
+	public RefreshTokenInfo getRefreshTokenInfo(String refreshToken) {
+
+		Claims claims =	Jwts.parserBuilder()
+			.setSigningKey(refreshSecret)
+			.build().parseClaimsJws(refreshToken).getBody();
+
+		String userEmail = claims.getSubject();
+		Role role = Role.valueOf(claims.get("role", String.class));
+		long expireAt = claims.getExpiration().getTime();
+
+		RefreshTokenInfo build = RefreshTokenInfo.builder()
+			.refreshToken(refreshToken)
+			.userEmail(userEmail)
+			.role(role)
+			.expiresAt(expireAt)
+			.build();
+
+		log.info("build : {}", build);
+		return build;
+
+	}
+
 	public boolean validateAccessTokenAllowExpired(String accessToken) {
 		try {
 			Jwts.parserBuilder()
@@ -336,4 +362,5 @@ public class JwtProvider {
 		}
 		throw new JwtException("유효하지 않은 Access Token 입니다.");
 	}
+
 }

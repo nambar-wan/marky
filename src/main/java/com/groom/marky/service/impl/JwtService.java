@@ -114,4 +114,17 @@ public class JwtService {
 			.role(Role.valueOf(claims.get("role", String.class)))
 			.build();
 	}
+
+	public RefreshTokenInfo getRefreshTokenInfo(TokenResponse tokenResponse) {
+		String accessToken = tokenResponse.getAccessToken();
+		String refreshToken = tokenResponse.getRefreshToken();
+
+		AccessTokenInfo accessTokenInfo = jwtProvider.getAccessTokenInfo(accessToken);
+		RefreshTokenInfo refreshTokenInfo = jwtProvider.getRefreshTokenInfo(refreshToken);
+
+		refreshTokenInfo.setIp(accessTokenInfo.getIp());
+		refreshTokenInfo.setUserAgent(accessTokenInfo.getUserAgent());
+
+		return refreshTokenInfo;
+	}
 }
