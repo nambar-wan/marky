@@ -137,12 +137,7 @@ public class RedisService {
 
 		String userEmail = tokenInfo.getUserEmail();
 		String refreshTokenKey = RedisKeyParser.getRefreshTokenKey(userEmail);
-		/*String savedRefreshTokenInfo = redisTemplate.opsForValue().get(refreshTokenKey);
 
-		if (savedRefreshTokenInfo == null) {
-			throw new IllegalArgumentException("해당 사용자의 리프레쉬 토큰이 존재하지 않습니다.");
-		}
-*/
 		// 리프레쉬 토큰 삭제
 		redisTemplate.delete(refreshTokenKey);
 

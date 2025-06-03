@@ -51,6 +51,8 @@ public class GoogleOAuthService {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
+		// MediaType.APPLICATION_FORM_URLENCODED 타입을 LinkedMultiValueMap 다루면 편하다고 합니다.
+		// LinkedMultiValueMap 사용 시 Content-Type: application/x-www-form-urlencoded일 때 내부적으로 key=value&key2=value2 포맷으로 변환해줌
 		MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
 		body.add("code", code);
 		body.add("client_id", clientId);
@@ -61,7 +63,7 @@ public class GoogleOAuthService {
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
 		ResponseEntity<GoogleTokenResponse> response = restTemplate.exchange(
-			TOKEN_URI,
+			TOKEN_URI, // https://oauth2.googleapis.com/token
 			HttpMethod.POST,
 			request,
 			GoogleTokenResponse.class
@@ -81,7 +83,7 @@ public class GoogleOAuthService {
 	}
 
 	public String getLoginUri() {
-		URI baseUri = URI.create(GOOGLE_AUTH_BASE_URI);
+		URI baseUri = URI.create(GOOGLE_AUTH_BASE_URI); // https://accounts.google.com/o/oauth2/v2/auth
 
 		return UriComponentsBuilder.fromUri(baseUri)
 			.queryParam("client_id", clientId)
@@ -102,7 +104,7 @@ public class GoogleOAuthService {
 		HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
 
 		ResponseEntity<GoogleUserInfo> response = restTemplate.exchange(
-			USER_INFO_URI,
+			USER_INFO_URI, // https://www.googleapis.com/oauth2/v3/userinfo
 			HttpMethod.GET,
 			httpEntity,
 			GoogleUserInfo.class

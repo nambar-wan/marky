@@ -13,7 +13,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.groom.marky.domain.Role;
 import com.groom.marky.domain.request.CreateToken;
 import com.groom.marky.domain.response.GoogleUserInfo;
-import com.groom.marky.domain.response.RefreshTokenInfo;
 import com.groom.marky.domain.response.TokenResponse;
 import com.groom.marky.domain.response.UserResponse;
 import com.groom.marky.service.UserService;

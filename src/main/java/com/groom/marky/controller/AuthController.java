@@ -1,7 +1,5 @@
 package com.groom.marky.controller;
 
-import java.util.Date;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,7 +22,6 @@ import com.groom.marky.service.UserService;
 import com.groom.marky.service.impl.JwtService;
 import com.groom.marky.service.impl.RedisService;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -89,7 +86,8 @@ public class AuthController {
 	 * @throws JsonProcessingException
 	 */
 	@PostMapping("/login")
-	public ResponseEntity<?> localLogin(@RequestBody @Valid LoginRequest loginRequest, HttpServletRequest httpRequest) throws
+	public ResponseEntity<?> localLogin(@RequestBody @Valid LoginRequest loginRequest,
+		HttpServletRequest httpRequest) throws
 		JsonProcessingException {
 
 		// 아이디 패스워드 확인

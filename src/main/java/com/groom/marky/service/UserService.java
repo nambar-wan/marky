@@ -80,7 +80,7 @@ public class UserService {
 
 	@Transactional
 	public UserResponse findOrCreate(GoogleUserInfo userInfo) {
-		// 1. 해당되는 구글 아이디가 있는지 확인. 있으면 해당 유저 반환
+		// 해당되는 구글 아이디가 있는지 확인. 있으면 해당 유저 반환
 		String googleId = userInfo.getGoogleId();
 		String userEmail = userInfo.getUserEmail();
 		String name = userInfo.getName();
