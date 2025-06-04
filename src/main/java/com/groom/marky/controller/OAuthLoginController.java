@@ -50,10 +50,12 @@ public class OAuthLoginController {
 		response.sendRedirect(loginUri);
 	}
 
+	// http://localhost:8080/auth/google/callback
 	@GetMapping("/google/callback")
 	public ResponseEntity<?> callback(@RequestParam String code, HttpServletRequest request) throws
 		JsonProcessingException {
 		log.info("Google OAuth 인증 코드 수신: {}", code);
+
 
 		// 1. code → access token 요청
 		String accessToken = googleOAuthService.getAccessToken(code);
@@ -61,10 +63,11 @@ public class OAuthLoginController {
 		// 2. access token → 사용자 정보 요청
 		GoogleUserInfo userInfo = googleOAuthService.getUserInfo(accessToken);
 
-		//  3. DB 조회 or 회원가입
+		// 3. DB 조회 or 회원가입
 		UserResponse userResponse = userService.findOrCreate(userInfo);
 
-		// 4. 토큰 반환
+
+		// 4. JWT 토큰 반환
 		String ip = request.getRemoteAddr();
 		String userAgent = request.getHeader("User-Agent");
 		String userEmail = userResponse.getUserEmail();

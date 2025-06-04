@@ -5,13 +5,10 @@ import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
@@ -25,7 +22,6 @@ import com.groom.marky.common.TmapTransitClient;
 import com.groom.marky.repository.CustomChatMemoryRepository;
 import com.groom.marky.service.KakaoPlaceSearchService;
 import com.groom.marky.service.advisor.ActivityDetailAdvisor;
-import com.groom.marky.service.advisor.CreateConversationAdvisor;
 import com.groom.marky.service.advisor.LocationResolverAdvisor;
 import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
@@ -66,7 +62,8 @@ public class ChatClientConfig {
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(
 				ToolCallbacks.from(
-					redisGeoSearchTool, placeVectorSearchTool, activitySearchTool, subwayRouteSearchTool, restaurantSearchTool))
+					redisGeoSearchTool, placeVectorSearchTool, activitySearchTool, subwayRouteSearchTool,
+					restaurantSearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 
@@ -84,7 +81,6 @@ public class ChatClientConfig {
 			.build();
 	}
 
-
 	@Bean
 	public RestTemplate restTemplate() {
 		RestTemplate restTemplate = new RestTemplate();
@@ -98,7 +94,6 @@ public class ChatClientConfig {
 		mapper.registerModule(new JavaTimeModule());
 		return mapper;
 	}
-
 
 	@Bean
 	public UserIntentAdvisor userIntentAdvisor(ChatModel chatModel, ObjectMapper objectMapper) {
@@ -129,7 +124,6 @@ public class ChatClientConfig {
 	public TmapTransitClient tmapTransitClient(ObjectMapper objectMapper, RestTemplate restTemplate) {
 		return new TmapTransitClient(objectMapper, restTemplate);
 	}
-
 
 	@Bean
 	public ActivityDetailAdvisor activityDetailAdvisor(ChatModel chatModel, ObjectMapper objectMapper) {

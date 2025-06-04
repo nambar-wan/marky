@@ -24,12 +24,15 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 
 	private final ChatLogRepository chatLogRepository;
 	private final ConversationRepository conversationRepository;
+	private final UserRepository userRepository;
 
 	@Autowired
 	public CustomChatMemoryRepository(ChatLogRepository chatLogRepository,
-		ConversationRepository conversationRepository) {
+		ConversationRepository conversationRepository,
+		UserRepository userRepository) {
 		this.chatLogRepository = chatLogRepository;
 		this.conversationRepository = conversationRepository;
+		this.userRepository = userRepository;
 	}
 
 	/**
@@ -50,6 +53,7 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 	 */
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
+		log.info("[CustomChatMemoryRepository] findByConversationId 진입. conversationId : {} ", conversationId);
 
 		// 1. conversationId로 ChatLog 리스트 조회
 		try {
@@ -84,6 +88,9 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 	@Transactional
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
+
+		log.info("[CustomChatMemoryRepository] saveAll 진입. conversationId : {} ", conversationId);
+
 		Conversation conversation = conversationRepository.findConversationByConversationId(conversationId)
 			.orElse(null);
 
@@ -100,14 +107,16 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 
 			if (message instanceof AssistantMessage) {
 
-				String question = (String)message.getMetadata().get("question");
-				String answer = (String)message.getMetadata().get("answer");
+				String question = (String) message.getMetadata().get("question");
+				String answer = (String) message.getMetadata().get("answer");
+				Object rawUsage = message.getMetadata().get("usage");
+
 
 				int promptTokens = 0;
 				int completionTokens = 0;
 				int totalTokens = 0;
 
-				Object rawUsage = message.getMetadata().get("usage");
+
 				if (rawUsage instanceof Usage usage) {
 					promptTokens = usage.getPromptTokens();
 					completionTokens = usage.getCompletionTokens();
@@ -127,6 +136,10 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 
 				conversation.addChatLog(chatLog);
 				chatLogRepository.save(chatLog);
+
+				/**
+				 * TODO : 유저 테이블에 사용량 갱신
+				 */
 			}
 		}
 	}

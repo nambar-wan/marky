@@ -14,7 +14,6 @@ public class RedisKeyParser {
 
 	public static String getRefreshTokenKey(String userEmail) {
 		return REFRESH_TOKEN + ":" + userEmail;
-
 	}
 
 	public static String getBlacklistKey(String accessToken) {
