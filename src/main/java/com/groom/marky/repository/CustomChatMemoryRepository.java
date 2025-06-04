@@ -1,6 +1,7 @@
 package com.groom.marky.repository;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -88,8 +89,7 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 	@Transactional
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
-
-		log.info("[CustomChatMemoryRepository] saveAll 진입. conversationId : {} ", conversationId);
+		log.info("[CustomChatMemoryRepository] findByConversationId 진입. conversationId : {}", conversationId);
 
 		Conversation conversation = conversationRepository.findConversationByConversationId(conversationId)
 			.orElse(null);
@@ -99,28 +99,39 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 			return;
 		}
 
-		log.warn("message size: {}", messages.size());
+		log.info("message size: {}", messages.size());
 
 		for (Message message : messages) {
-			log.warn("메시지 타입: {}", message.getClass().getSimpleName());
-			log.warn("내용: {}", message.getText());
+			log.info("메시지 타입: {}", message.getClass().getSimpleName());
+			log.info("내용: {}", message.getText());
 
 			if (message instanceof AssistantMessage) {
+				Map<String, Object> metadata = message.getMetadata();
 
-				String question = (String) message.getMetadata().get("question");
-				String answer = (String) message.getMetadata().get("answer");
-				Object rawUsage = message.getMetadata().get("usage");
+				if (metadata == null || metadata.isEmpty()) {
+					log.warn("저장 스킵: metadata가 비어 있음");
+					continue;
+				}
 
+				Object questionObj = metadata.get("question");
+				Object answerObj = metadata.get("answer");
+
+				if (!(questionObj instanceof String question) || !(answerObj instanceof String answer)) {
+					log.warn("저장 스킵: question 또는 answer가 null이거나 문자열이 아님. metadata={}", metadata);
+					continue;
+				}
 
 				int promptTokens = 0;
 				int completionTokens = 0;
 				int totalTokens = 0;
 
-
+				Object rawUsage = metadata.get("usage");
 				if (rawUsage instanceof Usage usage) {
 					promptTokens = usage.getPromptTokens();
 					completionTokens = usage.getCompletionTokens();
 					totalTokens = usage.getTotalTokens();
+				} else {
+					log.warn("usage 정보 없음 또는 형식 불일치. metadata={}", metadata);
 				}
 
 				ChatLog chatLog = ChatLog.builder()
@@ -132,14 +143,10 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 					.totalToken(totalTokens)
 					.build();
 
-				log.warn("저장 전: {}", chatLog);
+				log.info("chatLog 저장 전 호출. 사용자 질문 : {}, LLM 응답 : {}", chatLog.getQuestion(), chatLog.getAnswer());
 
 				conversation.addChatLog(chatLog);
 				chatLogRepository.save(chatLog);
-
-				/**
-				 * TODO : 유저 테이블에 사용량 갱신
-				 */
 			}
 		}
 	}

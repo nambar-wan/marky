@@ -27,12 +27,12 @@ public class RestaurantSearchTool {
 	@Tool(
 		name = "restaurantSearch",
 		description = """
-			사용자가 원하는 분위기나 조건(mood)에 유사한 음식점을 location 기준으로 5개 추천합니다.
-			메타데이터 내 formattedAddress 필드를 location에 기반해 필터링한 후, mood 임베딩 기반 유사도 검색을 수행합니다.
-			"""
+		지정된 위치(location)를 기준으로 분위기(mood)에 유사한 음식점을 5개 추천합니다.
+		위치는 formattedAddress 메타데이터를 기준으로 필터링되며, pgvector 기반 유사도 계산을 통해 추천이 이루어집니다.
+	"""
 	)
 	public List<Document> restaurantSearch(
-		@ToolParam(description = "사용자 요구 분위기 리스트", required = true) List<String> mood,
+		@ToolParam(description = "사용자 요구 분위기 리스트", required = true) String mood,
 		@ToolParam(description = "주소 필터링에 사용할 행정동, 역 등 위치", required = true) String location
 	) {
 		log.info("[restaurantSearch Tool 호출] location : {}, mood : {}", location, mood);

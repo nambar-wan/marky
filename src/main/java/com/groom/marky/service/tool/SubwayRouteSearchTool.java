@@ -1,35 +1,50 @@
 package com.groom.marky.service.tool;
 
-import com.groom.marky.domain.response.SubwayRouteDescriptionBuilder;
-import com.groom.marky.domain.response.SubwayRouteResponse;
-import com.groom.marky.service.SubwayRouteService;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.groom.marky.common.TmapTransitClient;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SubwayRouteSearchTool {
 
-    @Autowired
-    private SubwayRouteService subwayRouteService;
+	private final TmapTransitClient tmapTransitClient;
 
-    @Tool(
-            name ="getSubwayRoute",
-            description = """
-                    출발역(origin)과 도착역(destination)을 기준으로
-                    서울 지하철의 최적 경로(최단 소요 시간)를 조회합니다.
-                    총 소요 시간, 경유역 목록, 환승 정보 등을 포함한 경로를 반환합니다.
-                    """
-    )
-    public String getSubwayRoute(
-            @ToolParam(description = "출발역 이름", required = true) String origin,
-            @ToolParam(description = "도착역 이름", required = true) String destination
-    ) {
-        log.info("[getSubwayRoute 호출] 출발역: {}, 도착역: {}", origin, destination);
-        SubwayRouteResponse.SubwayRouteDto route = subwayRouteService.findShortestRoute(origin, destination);
-        return SubwayRouteDescriptionBuilder.build(route);
-    }
+	@Tool(
+		name = "getSubwayStationList",
+		description = """
+				출발지(origin)와 목적지(destination)의 위도/경도를 기반으로,
+				Tmap API를 이용해 지하철 경유역 목록을 조회합니다.
+				반환값은 역 이름의 리스트입니다.
+			"""
+	)
+	public String getSubwayStations(
+		@ToolParam(description = "출발지 위도", required = true) Double originLat,
+		@ToolParam(description = "출발지 경도", required = true) Double originLon,
+		@ToolParam(description = "목적지 위도", required = true) Double destLat,
+		@ToolParam(description = "목적지 경도", required = true) Double destLon
+	) {
+		log.info("[getSubwayStations 호출] 출발지 위경도 : ({},{}), 목적지 위경도: ({},{})",
+			originLat, originLon, destLat, destLon);
+
+		if (originLat == null || originLon == null || destLat == null || destLon == null) {
+			return "위도/경도 값이 부족합니다. 네 값 모두 제공해주세요.";
+		}
+
+		List<String> stationList = tmapTransitClient.getSubwayStations(originLon, originLat, destLon, destLat);
+
+		if (stationList == null || stationList.isEmpty()) {
+			return "지하철 경로를 찾을 수 없습니다.";
+		}
+
+		return String.join(" -> ", stationList);
+	}
 }

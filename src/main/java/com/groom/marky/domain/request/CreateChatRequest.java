@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class CreateChatRequest {
 
-	private String conversationId;
+	private String cid;
 
 	@NotBlank
 	private String message;

@@ -1,5 +1,8 @@
 package com.groom.marky.service.advisor;
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +37,12 @@ public class UserIntentAdvisor implements CallAdvisor {
 	private static final String TIME_SLOT = "timeSlot";
 	private static final String DAY_TYPE = "dayType";
 
+	private static final Map<String, String> DEFAULT_MOOD_BY_INTENT = Map.ofEntries(
+		Map.entry("카페", "리뷰가 있고, 사용자 평가가 좋은"),
+		Map.entry("식당", "리뷰가 있고, 사용자 평가가 좋은"),
+		Map.entry("액티비티", "리뷰가 있고, 사용자 평가가 좋은"),
+		Map.entry("주차장", "리뷰가 있고, 사용자 평가가 좋은")
+	);
 
 	@Autowired
 	public UserIntentAdvisor(ChatModel chatModel, ObjectMapper objectMapper) {
@@ -41,99 +50,128 @@ public class UserIntentAdvisor implements CallAdvisor {
 		this.objectMapper = objectMapper;
 	}
 
+	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-
 		log.info("[UserIntentAdvisor] 진입");
 
-		String input = request.prompt().getUserMessages().stream()
-			.map(UserMessage::getText)
-			.reduce(" ", String::concat);
+		String currentInput = request.prompt().getUserMessages().getLast().getText();
+		Map<String, Object> extracted = tryExtractContext(currentInput);
 
-		// 프롬프트 상세히 쓰기..
-		// 지피티한테 프롬프트 짜달라하기
+		if (extracted == null || extracted.get(INTENT_KEY) == null || extracted.get(INTENT_KEY).toString().isBlank()) {
+			log.info("[UserIntentAdvisor] 현재 입력만으로 intent 판단 실패 → 이전 대화 포함 재시도");
+			String fullInput = request.prompt().getUserMessages().stream().map(UserMessage::getText).reduce(" ", String::concat);
+			extracted = tryExtractContext(fullInput);
+		}
+
+		if (extracted == null) {
+			log.warn("[UserIntentAdvisor] 두 번의 시도 모두 실패 → 원본 요청 진행");
+			return chain.nextCall(request);
+		}
+
+		String intent = (String)extracted.getOrDefault(INTENT_KEY, "");
+		String location = (String)extracted.getOrDefault(LOCATION_KEY, "");
+		String mood = (String)extracted.getOrDefault(MOOD_KEY, "");
+		String origin = (String)extracted.getOrDefault(ORIGIN, "");
+		String destination = (String)extracted.getOrDefault(DESTINATION, "");
+		String timeSlot = (String)extracted.getOrDefault(TIME_SLOT, "");
+		String dayType = (String)extracted.getOrDefault(DAY_TYPE, "");
+
+		if ((mood == null || mood.isBlank()) && !intent.isBlank()) {
+			mood = DEFAULT_MOOD_BY_INTENT.getOrDefault(intent, "");
+			log.info("[UserIntentAdvisor] mood 기본값 적용: {}", mood);
+		}
+
+		if ("경로".equals(intent)) {
+			if (timeSlot.isBlank()) {
+				LocalDateTime now = LocalDateTime.now();
+				timeSlot = now.format(DateTimeFormatter.ofPattern("a h시")).replace("AM", "오전").replace("PM", "오후");
+				log.info("[UserIntentAdvisor] timeSlot 기본값 적용: {}", timeSlot);
+			}
+
+			if (dayType.isBlank()) {
+				DayOfWeek dow = LocalDateTime.now().getDayOfWeek();
+				switch (dow) {
+					case SATURDAY, SUNDAY -> dayType = "주말";
+					default -> dayType = dow.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.KOREAN);
+				}
+				log.info("[UserIntentAdvisor] dayType 기본값 적용: {}", dayType);
+			}
+		}
+
+		return chain.nextCall(request.mutate()
+			.context(INTENT_KEY, intent)
+			.context(LOCATION_KEY, location)
+			.context(MOOD_KEY, mood)
+			.context(ORIGIN, origin)
+			.context(DESTINATION, destination)
+			.context(TIME_SLOT, timeSlot)
+			.context(DAY_TYPE, dayType)
+			.build());
+	}
+
+	private Map<String, Object> tryExtractContext(String input) {
 		Prompt prompt = new Prompt(List.of(
 			new SystemMessage("""
-					다음 사용자 입력에서 intent, location, mood를 JSON 형식으로 정확히 추출해줘.
-				
-					- intent: 사용자의 목적 (예: 주차장, 카페, 식당, 놀거리, 경로, 지하철 등)
-					- location: 장소명 또는 지역명 (예: 연남동, 홍대입구역, 마포구 등)
-					- mood: 분위기, 선호 조건, 상황 (예: 조용한, 디저트가 맛있는, 공부하기 좋은, 감성적인 등)
-				
-					mood에는 다음과 같은 유형이 포함될 수 있어:
-					- 음식 취향: 느끼한 음식, 매운 음식, 건강한 음식 등
-					- 분위기: 조용한, 분위기 좋은, 감성적인, 트렌디한 등
-					- 목적/상황: 공부하기 좋은, 연인과 가기 좋은, 아이와 가기 좋은 등
-					- 편의 조건: 주차 가능한, 테이크아웃 가능, 콘센트 있는 등
-					
-					[경로 요청 처리]
-					- 사용자가 "A역에서 B역까지 가는 법", "A~B 지하철 경로", "A역에서 B역까지 지하철 경로 알려줘", "몇시 요일 A역에서 B역까지 지하철 경로 알려줘"등을 말하면
-					- intent : "경로"
-					- mood는 비워두고 "" 처리해줘.
-					- location는 비워두고 "" 처리해줘
-					- intent가 "경로"라면 출발지를 유추해서 origin 키로,  도착지를 유추해서 destination 키로 저장해줘.
-					- timeSlot: "시간" 사용자가 입력한게 없다면 ""
-					- dayType: "요일" 사용자가 입력한게 없다면 ""
-					 
-				
-					[위치 정규화 안내]
-					- 사용자가 "근처", "주변", "가까운", "인근" 등의 표현을 사용하면,
-					  실제 존재하는 지명으로 location 값을 보정해서 추출해줘.
-					- 예를 들어 "홍대입구역 근처"는 location: "홍대입구역" 으로 변환.
-					- 잘 알려진 지하철역, 동/구 단위 행정동 등을 우선적으로 활용해.
-					- 존재하지 않는 장소명일 경우 가장 유사한 실제 장소로 추정해줘.
-				
-					출력은 반드시 아래 JSON 형식을 따라줘. 키는 모두 포함되어야 하며, 값이 없을 경우 "null"로 작성해.
-				
-					출력 예시:
-					{ "intent": "식당", "location": "합정역", "mood": "조용하고 분위기 좋은" }
-					{ "intent": "경로", "location": "","origin": "강남역", "destination": "역삼역", "mood": "", "timeSlot" : "",
-					  "dayType": ""}
-					
-				
-					반드시 JSON만 출력하고, 설명은 포함하지 마.
-					너는 툴 콜링을 사용하면 안돼.
+				다음 사용자 입력에서 intent, location, mood를 JSON 형식으로 정확히 추출해줘.
+
+				너는 사용자의 문장을 이해하고, 아래 5가지 중 하나로 intent 값을 지정해줘.
+
+				[intent 값 목록]
+				- "카페"
+				- "식당"
+				- "경로"
+				- "주차장"
+				- "액티비티"
+
+				[분류 규칙]
+				- 문장에 "카페", "커피", "디저트"가 포함되면 intent = "카페"
+				- "식당", "맛집", "음식", "밥집"이 포함되면 intent = "식당"
+				- "어떻게 가", "가는 방법", "길 안내", "도착", "경로"가 포함되면 intent = "경로"
+				- "주차", "주차장"이 포함되면 intent = "주차장"
+				- 다음 키워드 중 하나라도 포함되면 intent = "액티비티":
+				  - **13가지 활동 키워드**: "클라이밍", "스크린야구", "스크린골프", "보드게임카페", "만화카페",
+				    "방탈출", "VR체험관", "PC방", "볼링장", "당구장", "아쿠아리움", "찜질방", "시장"
+				  - **일반 활동 표현**: "놀거리", "할거리", "할거", "놀거 등의 표현"
+
+				- location: 장소명 또는 지역명 (예: 강남역, 연남동, 마포구 등)
+				- mood: 분위기, 선호 조건, 상황 (예: 조용한, 트렌디한, 디저트 맛있는, 공부하기 좋은 등).. 13가지 활동 키워드는 mood 가 될 수 없어.
+
+				주의:
+				- 사용자의 최근 입력이 단독으로 의미가 불분명할 경우, 이전 메시지를 참고해 의도를 완성해.
+				- location, intent, mood 가 현재 메시지에서 명확하지 않으면 최근 대화 내용에서 추론해도 좋아.
+
+				경로 요청의 경우 특별 규칙이 있어:
+				- intent는 반드시 "경로"
+				- location과 mood는 ""로 비워줘
+				- origin: 출발지 유추
+				- destination: 도착지 유추
+				- timeSlot: 시간 관련 표현이 있다면 추출, 없으면 ""
+				- dayType: 요일 표현이 있다면 추출, 없으면 ""
+
+				출력 형식은 다음과 같아. 모든 키를 포함하고, 값이 없으면 ""로 출력해.
+				{
+				  "intent": "...",
+				  "location": "...",
+				  "mood": "...",
+				  "origin": "...",
+				  "destination": "...",
+				  "timeSlot": "...",
+				  "dayType": "..."
+				}
+
+				출력은 반드시 JSON만. 절대 설명하지 마. 툴 콜링도 하지 마.
 				"""),
 			new UserMessage(input)
 		));
 
-		String json = chatModel.call(prompt).getResult().getOutput().getText();
-
-
-		if (!json.trim().startsWith("{")) {
-			log.warn("LLM 응답이 JSON이 아님: {}", json);
-			return chain.nextCall(request);
-		}
-
-
-
 		try {
-			Map<String, String> extracted = objectMapper.readValue(json, new TypeReference<>() {});
-			String intent = extracted.getOrDefault(INTENT_KEY, "");
-			String location = extracted.getOrDefault(LOCATION_KEY, "");
-			String mood = extracted.getOrDefault(MOOD_KEY, "");
-			String origin = extracted.getOrDefault(ORIGIN, "");
-			String destination = extracted.getOrDefault(DESTINATION, "");
-			String timeSlot = extracted.getOrDefault(TIME_SLOT, "");
-			String dayType = extracted.getOrDefault(DAY_TYPE, "");
-
-			log.info("[UserIntentAdvisor] 의도: {}, 장소: {}, 분위기: {}, 출발지 : {}, 목적지 : {}" , intent, location, mood, origin, destination);
-
-
-			ChatClientRequest modified = request.mutate()
-				.context(INTENT_KEY, intent)
-				.context(LOCATION_KEY, location)
-				.context(MOOD_KEY, mood)
-				.context(ORIGIN,origin)
-				.context(DESTINATION,destination)
-				.context(TIME_SLOT,timeSlot)
-				.context(DAY_TYPE,dayType)
-				.build();
-
-			return chain.nextCall(modified);
-
+			String raw = chatModel.call(prompt).getResult().getOutput().getText();
+			String json = raw.replaceAll("(?s)^```json\\s*", "").replaceAll("(?s)```$", "").trim();
+			if (!json.startsWith("{")) return null;
+			return objectMapper.readValue(json, new TypeReference<>() {});
 		} catch (Exception e) {
-			log.warn("JSON 파싱 실패: {} LLM 응답: {}", e.getMessage(), json, e);
-			return chain.nextCall(request);
+			log.warn("[UserIntentAdvisor] JSON 파싱 실패: {}", e.getMessage());
+			return null;
 		}
 	}
 
@@ -144,6 +182,6 @@ public class UserIntentAdvisor implements CallAdvisor {
 
 	@Override
 	public int getOrder() {
-		return 2;
+		return 1;
 	}
 }

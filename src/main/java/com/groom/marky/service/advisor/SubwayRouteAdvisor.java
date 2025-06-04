@@ -6,7 +6,6 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Description;
 
 import com.groom.marky.common.TmapTransitClient;
@@ -22,18 +21,16 @@ public class SubwayRouteAdvisor implements CallAdvisor {
 	private static final String DEST_LAT = "destLat";
 	private static final String DEST_LON = "destLon";
 
-//	private static final String DEPARTURE_LAT_KEY = "departureLat";
-//	private static final String DEPARTURE_LON_KEY = "departureLon";
-//	private static final String DESTINATION_LAT_KEY = "destinationLat";
-//	private static final String DESTINATION_LON_KEY = "destinationLon";
+	//	private static final String DEPARTURE_LAT_KEY = "departureLat";
+	//	private static final String DEPARTURE_LON_KEY = "departureLon";
+	//	private static final String DESTINATION_LAT_KEY = "destinationLat";
+	//	private static final String DESTINATION_LON_KEY = "destinationLon";
 
 	private final TmapTransitClient tmapTransitClient;
-
 
 	public SubwayRouteAdvisor(TmapTransitClient tmapTransitClient) {
 		this.tmapTransitClient = tmapTransitClient;
 	}
-
 
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
@@ -53,10 +50,9 @@ public class SubwayRouteAdvisor implements CallAdvisor {
 
 		// 역 이름들 조회
 		List<String> stationList = tmapTransitClient.getSubwayStations(
-				originLon, originLat, // startX, startY
-				destLon, destLat // endX, endY
+			originLon, originLat, // startX, startY
+			destLon, destLat // endX, endY
 		);
-
 
 		if (stationList.isEmpty()) {
 			log.warn("지하철 경로 없음");
