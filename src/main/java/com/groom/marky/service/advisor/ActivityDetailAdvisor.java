@@ -61,7 +61,8 @@ public class ActivityDetailAdvisor implements CallAdvisor {
                 너는 intent 문장을 받아서 사용자 의도를 13개 활동 카테고리 중 하나로 정규화하는 역할만 수행한다.
                 아래 명세에 따라 JSON 객체를 생성해줘. **반드시 아래 조건을 지켜라.**
                 - 코드 블록이나 마크다운(```json 등)을 절대 사용하지 마.
-                - intent = "경로" 라면 activity_detail = "" 
+                - intent = "경로" 라면 activity_detail = ""
+                - intent = "카페" 라면 activity_detail = ""
                 [출력 형식]
                 {
                   "activity_detail": "스크린 야구"  // ← 값 예시

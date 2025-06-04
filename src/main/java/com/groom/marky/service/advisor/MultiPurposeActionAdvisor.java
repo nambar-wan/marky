@@ -36,6 +36,11 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		- 사용자의 현재 위치를 기준으로 주변 intent의 고유 ID 목록을 조회합니다.
 		- 반환된 ID 리스트는 이후 추천할 대상의 범위를 한정할 때 사용됩니다.
 		
+		5. searchCafe(lat : Double, lon : Double, mood : String)
+		- intent가 카페, cafe, 커피숍 혹은 그와 비슷한 의미일 경우 이 툴을 사용한다.
+		- 사용자가 원하는 위치를 기준으로 특정 반지름 내에 위치한 카페 목록을 Redis에서 조회하여 카페 ID의 목록을 반환합니다.
+		- 반환된 ID 목록 내에서 추후 유사도 검사를 할 수 있도록 범위를 한정합니다.
+		
 		[mood 설명]
 		- mood는 사용자가 원하는 분위기나 조건을 뜻하는 텍스트로, 예를 들어 다음과 같은 값이 있습니다:
 		  - 리뷰가 있는
@@ -54,6 +59,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		- '종로3가에서 홍대입구까지 가는 법' -> getSubwayRoute(origin="종로3가", destination="홍대입구")
 		- '리뷰가 좋은 주차장을 추천해줘' → searchParkingLots(lat : Double, lon : Double) -> similaritySearch(mood="리뷰가 좋은", ids=[...])
 		- '조용하고 쾌적한 주차장' → searchParkingLots(lat : Double, lon : Double) -> similaritySearch(mood="조용하고 쾌적한", ids=[...])
+		- '연남동에 노래가 좋은 카페' → searchCafe(lat : Double, lon : Double, mood : String) -> similaritySearch(mood="노래가 좋은", ids=[...])
 		
 		요청에 맞는 툴을 위 형식대로 호출해 주세요.
 		""";

@@ -2,9 +2,8 @@ package com.groom.marky.config;
 
 import java.util.List;
 
-import com.groom.marky.service.tool.SubwayRouteSearchTool;
+import com.groom.marky.service.tool.*;
 import com.groom.marky.service.advisor.*;
-import com.groom.marky.service.tool.ActivitySearchTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -28,9 +27,6 @@ import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SubwayRouteAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
-import com.groom.marky.service.tool.PlaceVectorSearchTool;
-import com.groom.marky.service.tool.RedisGeoSearchTool;
-import com.groom.marky.service.tool.RestaurantSearchTool;
 
 @Configuration
 public class ChatClientConfig {
@@ -44,23 +40,24 @@ public class ChatClientConfig {
 
 	@Bean
 	public ChatClient chatClient(
-		ChatMemory chatMemory,
-		ChatModel model,
-		SystemRoleAdvisor systemRoleAdvisor,
-		UserIntentAdvisor userIntentAdvisor,
-		LocationResolverAdvisor locationResolverAdvisor,
-		ActivityDetailAdvisor activityDetailAdvisor,
-		RedisGeoSearchTool redisGeoSearchTool,
-		SubwayRouteSearchTool subwayRouteSearchTool,
-		PlaceVectorSearchTool placeVectorSearchTool,
-		ActivitySearchTool activitySearchTool,
-		SubwayRouteAdvisor subwayRouteAdvisor,
-		RestaurantSearchTool restaurantSearchTool,
-		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
+			ChatMemory chatMemory,
+			ChatModel model,
+			SystemRoleAdvisor systemRoleAdvisor,
+			UserIntentAdvisor userIntentAdvisor,
+			LocationResolverAdvisor locationResolverAdvisor,
+			ActivityDetailAdvisor activityDetailAdvisor,
+			RedisGeoSearchTool redisGeoSearchTool,
+			SubwayRouteSearchTool subwayRouteSearchTool,
+			PlaceVectorSearchTool placeVectorSearchTool,
+			ActivitySearchTool activitySearchTool,
+			SubwayRouteAdvisor subwayRouteAdvisor,
+			RestaurantSearchTool restaurantSearchTool,
+			MultiPurposeActionAdvisor multiPurposeActionAdvisor,
+			CafeSearchTool cafeSearchTool) {
 
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,
-				activitySearchTool, subwayRouteSearchTool, restaurantSearchTool))
+				activitySearchTool, subwayRouteSearchTool, restaurantSearchTool, cafeSearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 
