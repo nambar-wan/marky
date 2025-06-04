@@ -108,13 +108,13 @@ public class UserIntentAdvisor implements CallAdvisor {
 
 		try {
 			Map<String, String> extracted = objectMapper.readValue(json, new TypeReference<>() {});
-			String intent = extracted.get(INTENT_KEY);
-			String location = extracted.getOrDefault(LOCATION_KEY,"");
-			String mood = extracted.getOrDefault(MOOD_KEY,"");
-			String origin = extracted.get(ORIGIN);
-			String destination = extracted.get(DESTINATION);
-			String timeSlot = extracted.get(TIME_SLOT);
-			String dayType = extracted.get(DAY_TYPE);
+			String intent = extracted.getOrDefault(INTENT_KEY, "");
+			String location = extracted.getOrDefault(LOCATION_KEY, "");
+			String mood = extracted.getOrDefault(MOOD_KEY, "");
+			String origin = extracted.getOrDefault(ORIGIN, "");
+			String destination = extracted.getOrDefault(DESTINATION, "");
+			String timeSlot = extracted.getOrDefault(TIME_SLOT, "");
+			String dayType = extracted.getOrDefault(DAY_TYPE, "");
 
 			log.info("[UserIntentAdvisor] 의도: {}, 장소: {}, 분위기: {}, 출발지 : {}, 목적지 : {}" , intent, location, mood, origin, destination);
 
@@ -144,6 +144,6 @@ public class UserIntentAdvisor implements CallAdvisor {
 
 	@Override
 	public int getOrder() {
-		return 1;
+		return 2;
 	}
 }

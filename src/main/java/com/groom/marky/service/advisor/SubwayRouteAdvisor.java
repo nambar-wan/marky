@@ -29,7 +29,7 @@ public class SubwayRouteAdvisor implements CallAdvisor {
 
 	private final TmapTransitClient tmapTransitClient;
 
-	@Autowired
+
 	public SubwayRouteAdvisor(TmapTransitClient tmapTransitClient) {
 		this.tmapTransitClient = tmapTransitClient;
 	}

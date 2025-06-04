@@ -5,12 +5,16 @@ import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,11 +22,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.groom.marky.common.TmapGeocodingClient;
 import com.groom.marky.common.TmapTransitClient;
+import com.groom.marky.repository.CustomChatMemoryRepository;
 import com.groom.marky.service.KakaoPlaceSearchService;
 import com.groom.marky.service.advisor.ActivityDetailAdvisor;
+import com.groom.marky.service.advisor.CreateConversationAdvisor;
 import com.groom.marky.service.advisor.LocationResolverAdvisor;
 import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
-import com.groom.marky.service.advisor.SubwayRouteAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
 import com.groom.marky.service.tool.ActivitySearchTool;
@@ -31,12 +36,14 @@ import com.groom.marky.service.tool.RedisGeoSearchTool;
 import com.groom.marky.service.tool.RestaurantSearchTool;
 import com.groom.marky.service.tool.SubwayRouteSearchTool;
 
+@EnableJpaAuditing
 @Configuration
 public class ChatClientConfig {
 
 	@Bean
-	public ChatMemory chatMemory() {
+	public ChatMemory chatMemory(CustomChatMemoryRepository chatMemoryRepository) {
 		return MessageWindowChatMemory.builder()
+			.chatMemoryRepository(chatMemoryRepository)
 			.maxMessages(10)
 			.build();
 	}
@@ -53,7 +60,6 @@ public class ChatClientConfig {
 		SubwayRouteSearchTool subwayRouteSearchTool,
 		PlaceVectorSearchTool placeVectorSearchTool,
 		ActivitySearchTool activitySearchTool,
-		SubwayRouteAdvisor subwayRouteAdvisor,
 		RestaurantSearchTool restaurantSearchTool,
 		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
 
@@ -73,11 +79,11 @@ public class ChatClientConfig {
 				locationResolverAdvisor,
 				multiPurposeActionAdvisor,
 				activityDetailAdvisor,
-				multiPurposeActionAdvisor,
-				subwayRouteAdvisor
+				multiPurposeActionAdvisor
 			))
 			.build();
 	}
+
 
 	@Bean
 	public RestTemplate restTemplate() {
@@ -92,6 +98,7 @@ public class ChatClientConfig {
 		mapper.registerModule(new JavaTimeModule());
 		return mapper;
 	}
+
 
 	@Bean
 	public UserIntentAdvisor userIntentAdvisor(ChatModel chatModel, ObjectMapper objectMapper) {
@@ -123,10 +130,6 @@ public class ChatClientConfig {
 		return new TmapTransitClient(objectMapper, restTemplate);
 	}
 
-	@Bean
-	public SubwayRouteAdvisor subwayRouteAdvisor(TmapTransitClient tmapTransitClient) {
-		return new SubwayRouteAdvisor(tmapTransitClient);
-	}
 
 	@Bean
 	public ActivityDetailAdvisor activityDetailAdvisor(ChatModel chatModel, ObjectMapper objectMapper) {

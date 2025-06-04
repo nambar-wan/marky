@@ -130,7 +130,7 @@ public class ActivityDetailAdvisor implements CallAdvisor {
 
     @Override
     public int getOrder() {
-        return 3;
+        return 4;
     }
 }
 
