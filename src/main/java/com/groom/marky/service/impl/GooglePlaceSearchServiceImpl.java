@@ -119,6 +119,10 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		headers.set("X-Goog-FieldMask", TEXT_FIELD_HEADER);
 		headers.set("X-Goog-Api-Key", apiKey);
 
+
+
+
+
 		// 요청 생성
 		HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
 
