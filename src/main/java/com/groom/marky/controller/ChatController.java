@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groom.marky.domain.request.CreateChatRequest;
 import com.groom.marky.domain.request.CreateConversationRequest;
 import com.groom.marky.domain.response.ChatResponse;
-import com.groom.marky.domain.response.ConversationResponse;
+import com.groom.marky.domain.response.CreateConversationResponse;
 import com.groom.marky.service.ChatClientFactory;
 import com.groom.marky.service.ConversationService;
 
@@ -63,7 +63,7 @@ public class ChatController {
 				.userEmail(userEmail)
 				.build();
 
-			ConversationResponse conversationResponse = conversationService.create(conversationRequest);
+			CreateConversationResponse conversationResponse = conversationService.create(conversationRequest);
 
 			chatClientWithoutAdvisor = ChatClient.builder(chatModel).build();
 
@@ -128,7 +128,8 @@ public class ChatController {
 			String rawOutput = client.prompt()
 				.user(q)
 				.advisors()
-				.call().content();
+				.call()
+				.content();
 
 			try {
 				ChatResponse chatResponse = objectMapper.readValue(rawOutput, ChatResponse.class);

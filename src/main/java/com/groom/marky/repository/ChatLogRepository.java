@@ -12,4 +12,7 @@ import com.groom.marky.domain.Conversation;
 public interface ChatLogRepository extends JpaRepository<ChatLog, Long> {
 
 	List<ChatLog> findTop10ByConversationOrderByCreatedAtAsc(Conversation conversation);
+
+	List<ChatLog> findChatLogsByConversationOrderByCreatedAtAsc(Conversation conversation);
+
 }
