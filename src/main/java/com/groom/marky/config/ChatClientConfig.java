@@ -108,8 +108,8 @@ public class ChatClientConfig {
 	}
 
 	@Bean
-	public LocationResolverAdvisor locationResolverAdvisor(KakaoPlaceSearchService kakaoPlaceSearchService) {
-		return new LocationResolverAdvisor(kakaoPlaceSearchService);
+	public LocationResolverAdvisor locationResolverAdvisor(KakaoPlaceSearchService kakaoPlaceSearchService, ChatModel chatModel, ObjectMapper objectMapper) {
+		return new LocationResolverAdvisor(kakaoPlaceSearchService, chatModel, objectMapper);
 	}
 
 	@Bean

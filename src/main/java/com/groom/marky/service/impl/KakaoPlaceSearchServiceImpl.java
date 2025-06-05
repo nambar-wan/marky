@@ -147,6 +147,56 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		return result;
 	}
 
+	@Override
+	public Map<String, Double> searchLocation(String keyword, String category_code) {
+		HashMap<String, Double> result = new HashMap<>();
+		JsonNode finalNode = null;
+		try {
+			// 1. 첫 검색
+			if(category_code == null || category_code.isBlank() || "null".equals(category_code)) {
+				log.info("keyWord Search category : {}",category_code);
+				URI uri = buildKeywordUri(keyword);
+				//Todo 메서드 추출 가능
+				ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
+				JsonNode root = objectMapper.readTree(response.getBody());
+				JsonNode firstNode = root.path("documents");
+
+				if (!firstNode.isArray() || firstNode.isEmpty()) return result;
+
+				finalNode = firstNode.get(0);
+
+			}else {
+				try {
+					log.info("Category Search");
+
+					KakaoMapCategoryGroupCode categoryCode = KakaoMapCategoryGroupCode.valueOf(category_code.toUpperCase());
+					URI uri = buildLocationChangeKeywordUri(keyword, categoryCode);
+					ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
+					JsonNode documents = objectMapper.readTree(response.getBody()).path("documents");
+
+					if (documents.isArray() && !documents.isEmpty() && !documents.get(0).isNull()) {
+						finalNode = documents.get(0);
+						log.info("카테고리 검색 성공 → 좌표 : {}, {}", finalNode.path("x"), finalNode.path("y"));
+					}
+				} catch (IllegalArgumentException iae) {
+					log.warn("유효하지 않은 category: {}", category_code);
+					return result;
+				}
+			}
+
+			if (finalNode != null) {
+				result.put("lat", finalNode.path("y").asDouble());
+				result.put("lon", finalNode.path("x").asDouble());
+			}
+
+		} catch (Exception e) {
+			log.warn("[KakaoPlaceSearchServiceImpl] search 예외 발생: keyword={}, message={}", keyword, e.getMessage());
+		}
+
+		return result;
+	}
+
+
 	/**
 	 *
 	 * @param
@@ -312,6 +362,13 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 			.queryParam("query", keyword)
 			.encode(StandardCharsets.UTF_8)
 			.build().toUri();
+	}
+	private static URI buildLocationChangeKeywordUri(String keyword, KakaoMapCategoryGroupCode categoryGroupCode) {
+		return UriComponentsBuilder.fromUriString(KEYWORD_SEARCH_API_URI)
+				.queryParam("query", keyword)
+				.queryParam("category_group_code", categoryGroupCode)
+				.encode(StandardCharsets.UTF_8)
+				.build().toUri();
 	}
 
 	private static URI buildCategoryCountUri(String rect, KakaoMapCategoryGroupCode categoryGroupCode) {
