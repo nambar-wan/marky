@@ -36,15 +36,15 @@ public class ChatController {
 		this.chatModel = chatModel;
 	}
 
-	/**
-	 * 아래는 테스트입니다.
-	 */
+
 	@PostMapping("/chat/ai")
 	public ResponseEntity<?> chat(@RequestBody CreateChatRequest request, @AuthenticationPrincipal UserDetails userDetails) {
 
 		String conversationId = request.getCid();
 		String message = request.getMessage();
 		String userEmail = userDetails.getUsername();
+
+		log.info("message : {} ", message);
 
 		ChatClient chatClientWithoutAdvisor;
 
@@ -80,24 +80,31 @@ public class ChatController {
 
 		String userQuestions = chatClientWithoutAdvisor.prompt()
 			.system("""
-				    너는 사용자의 복합 질문을 의미 단위로 나누는 역할이야.
-				    사용자의 문장 안에 두 개 이상의 요청이 있으면, 각각 별도의 문장으로 분리해줘.
+				   ""\"
+			 너는 사용자의 복합 질문을 의미 단위로 "분리"하는 역할만 수행해.
+			\s
+			 - 문장의 의미를 절대로 바꾸지 마.
+			 - 표현 방식이나 말투도 바꾸지 마.
+			 - 말 그대로, 원문을 그대로 유지하면서 "질문 단위"로 나누기만 해.
+			 - 각 문장은 줄바꿈(\\\\n)으로 구분해.
+			 - 리스트나 번호는 붙이지 마.
+			 - 띄어쓰기만 보정하는 건 괜찮아.
 				
-				    - 불필요한 말은 제거하지 말고, 원문의 의미를 최대한 유지해.
-				    - 각 문장은 단독으로 이해될 수 있도록 작성해.
-				    - 각 문장은 줄바꿈(\\n)으로 구분해줘.
-				    - 숫자나 리스트 형태로 출력하지 마. 그냥 문장만 나열해.
+			 예시:
+			 입력: 홍대입구역 근처는??
+			 출력:
+			 홍대입구역 근처는??
+			\s
+			 입력: 강남역에서 파스타 먹고 영화 보고 싶어
+			 출력:
+			 강남역에서 파스타 먹고 싶어
+			 강남역에서 영화 보고 싶어
 				
-				    예시:
-				    입력: 강남역에서 파스타 먹고 영화 보고 싶어
-				    출력:
-				    강남역에서 파스타 먹고 싶어
-				    강남역에서 영화 보고 싶어
-				
-				    입력: 홍대에서 분위기 좋은 카페 갔다가, 저녁엔 신촌에서 조용한 식당 가고 싶어
-				    출력:
-				    홍대에서 분위기 좋은 카페 가고 싶어
-				    저녁엔 신촌에서 조용한 식당 가고 싶어
+			 입력: 홍대에서 분위기 좋은 카페 갔다가, 저녁엔 신촌에서 조용한 식당 가고 싶어
+			 출력:
+			 홍대에서 분위기 좋은 카페 가고 싶어
+			 저녁엔 신촌에서 조용한 식당 가고 싶어
+			 ""\"
 				""")
 			.user(message)
 			.advisors()
@@ -109,6 +116,9 @@ public class ChatController {
 		StringBuilder combinedResponse = new StringBuilder();
 
 		for (String q : questionArray) {
+			log.info("transformedMessage : {} ", q);
+
+
 			String response = client.prompt()
 				.user(q)
 				.advisors()

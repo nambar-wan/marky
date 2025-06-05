@@ -149,11 +149,10 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		ChatClientResponse response = chain.nextCall(updatedRequest);
 
 		Usage usage = response.chatResponse().getMetadata().getUsage();
-		UserMessage userMessage = request.prompt().getUserMessage();
 		AssistantMessage output = response.chatResponse().getResult().getOutput();
-
-		String userMessageText = userMessage.getText();
+		String userMessageText = (String) context.get("userRawInput");
 		String outputText = output.getText();
+
 		log.info("userMessage : {}, output : {}", userMessageText, outputText);
 
 		output.getMetadata().put("question", userMessageText);

@@ -58,6 +58,16 @@ public class RedisService {
 				.add(key, new Point(place.location().longitude(), place.location().latitude()), place.id());
 		}
 	}
+
+	public void setPlacesLocation(GooglePlaceType type, List<GooglePlacesApiResponse.Place> places) {
+		String key = RedisKeyParser.getPlaceKey(type);
+
+		for (Place place : places) {
+			redisTemplate.opsForGeo()
+				.add(key, new Point(place.location().longitude(), place.location().latitude()), place.id());
+		}
+	}
+
 	public void setSeoulPlacesLocation(GooglePlaceType type, List<Document> documents) {
 		String key = RedisKeyParser.getPlaceKey(type);
 

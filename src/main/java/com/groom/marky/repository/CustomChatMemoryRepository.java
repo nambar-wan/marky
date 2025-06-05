@@ -25,15 +25,12 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 
 	private final ChatLogRepository chatLogRepository;
 	private final ConversationRepository conversationRepository;
-	private final UserRepository userRepository;
 
 	@Autowired
 	public CustomChatMemoryRepository(ChatLogRepository chatLogRepository,
-		ConversationRepository conversationRepository,
-		UserRepository userRepository) {
+		ConversationRepository conversationRepository) {
 		this.chatLogRepository = chatLogRepository;
 		this.conversationRepository = conversationRepository;
-		this.userRepository = userRepository;
 	}
 
 	/**
@@ -89,7 +86,7 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 	@Transactional
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
-		log.info("[CustomChatMemoryRepository] findByConversationId 진입. conversationId : {}", conversationId);
+		log.info("[CustomChatMemoryRepository] saveAll 진입. conversationId : {}", conversationId);
 
 		Conversation conversation = conversationRepository.findConversationByConversationId(conversationId)
 			.orElse(null);
@@ -102,9 +99,6 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 		log.info("message size: {}", messages.size());
 
 		for (Message message : messages) {
-			log.info("메시지 타입: {}", message.getClass().getSimpleName());
-			log.info("내용: {}", message.getText());
-
 			if (message instanceof AssistantMessage) {
 				Map<String, Object> metadata = message.getMetadata();
 
@@ -147,9 +141,18 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 
 				conversation.addChatLog(chatLog);
 				chatLogRepository.save(chatLog);
+
+			} else if (message instanceof UserMessage userMessage) {
+				// metadata가 없거나 question이 없다면 사용자 입력이 아님 (예: LLM이 유추한 메시지)
+				if (!message.getMetadata().containsKey("question")) {
+					log.info("유저 입력 아님. 저장 및 출력 생략: {}", message.getText());
+					continue;
+				}
+				log.info("UserMessage (실제 유저 입력): {}", userMessage.getText());
 			}
 		}
 	}
+
 
 	/**
 	 * 역할: 해당 대화 ID에 해당하는 메시지들을 DB에서 삭제

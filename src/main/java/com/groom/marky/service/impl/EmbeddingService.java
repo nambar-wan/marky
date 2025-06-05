@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -70,14 +71,14 @@ public class EmbeddingService {
 				String id = UUID.nameUUIDFromBytes(place.id().getBytes(StandardCharsets.UTF_8)).toString();
 
 				log.info("placeId={}, length={}", place.id(), description.length());
-				if(description.length() > 7400) {
+				if (description.length() > 7400) {
 					log.info("!!!!!!!!!!!!!!토큰초과 예상됨!!!!!!!!!!!!!!!!");
 					log.info("placeId={}, length={}", place.id(), description.length());
 					redisService.markPlaceAsOverLength(place);
 				}
 
 				String type = "음식점";
-				if(!(place.primaryTypeDisplayName() == null || place.primaryTypeDisplayName().text() == null)) {
+				if (!(place.primaryTypeDisplayName() == null || place.primaryTypeDisplayName().text() == null)) {
 					type = place.primaryTypeDisplayName().text();
 				}
 
@@ -100,9 +101,16 @@ public class EmbeddingService {
 		vectorStore.add(documents);
 	}
 
-	public void saveParkingLotsEmbeddings(GooglePlacesApiResponse apiResponse, DescriptionBuilder descriptionBuilder) {
+	public List<Place> saveParkingLotsEmbeddings(GooglePlacesApiResponse apiResponse,
+		DescriptionBuilder descriptionBuilder) {
 
 		List<Place> places = apiResponse.places();
+
+		if (places == null) {
+			return List.of();
+		}
+
+		log.info("주차장 데이터 수집 결과 : {} 개 ", places.size());
 
 		/**
 		 *  "primaryTypeDisplayName": {
@@ -111,11 +119,17 @@ public class EmbeddingService {
 		 *       },
 		 */
 		// UUID 비교, 업데이트..
-		List<Document> documents = places.stream()
+		List<Place> filteredPlace = places.stream()
 			.filter(place ->
 				place.primaryTypeDisplayName() != null &&
-					"주차장".equals(place.primaryTypeDisplayName().text())
+					place.primaryTypeDisplayName().text().contains("주차")
 			)
+			.filter(place -> place.formattedAddress() != null &&
+				(place.formattedAddress().startsWith("대한민국 서울특별시") ||
+					place.formattedAddress().startsWith("서울특별시")))
+			.toList();
+
+		List<Document> documents = filteredPlace.stream()
 			.map(place -> {
 				String description = descriptionBuilder.buildDescription(place);
 				String id = UUID.nameUUIDFromBytes(place.id().getBytes(StandardCharsets.UTF_8)).toString();
@@ -136,6 +150,7 @@ public class EmbeddingService {
 			}).toList();
 
 		vectorStore.add(documents);
+		return filteredPlace;
 	}
 
 }

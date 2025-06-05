@@ -31,18 +31,19 @@ public class SystemRoleAdvisor implements CallAdvisor {
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
 
-		log.info("[SystemRoleAdvisor] 진입");
 
-		// 1) 기존 프롬프트에 시스템 메시지 병합
-		Prompt merged = request.prompt()
-			.augmentSystemMessage(SYSTEM_MESSAGE);
+		Prompt merged = request.prompt().augmentSystemMessage(SYSTEM_MESSAGE);
 
-		// 2) request.mutate() 로 기존 필드(함수 스키마, 옵션 포함) 유지하면서 Prompt만 교체
+		// 사용자 입력 원본을 context에 저장
+		String rawUserInput = request.prompt().getUserMessages().getLast().getText();
+
+		log.info("rawUserInput : {}", rawUserInput);
+
 		ChatClientRequest modified = request.mutate()
 			.prompt(merged)
+			.context("userRawInput", rawUserInput)  // 여기서 최초로 삽입
 			.build();
 
-		// 다음 체인 호출
 		return chain.nextCall(modified);
 	}
 
