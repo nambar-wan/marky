@@ -1,6 +1,8 @@
 package com.groom.marky.controller;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,8 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groom.marky.domain.request.CreateChatRequest;
 import com.groom.marky.domain.request.CreateConversationRequest;
+import com.groom.marky.domain.response.ChatResponse;
 import com.groom.marky.domain.response.ConversationResponse;
 import com.groom.marky.service.ChatClientFactory;
 import com.groom.marky.service.ConversationService;
@@ -23,19 +27,20 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@Slf4j
 public class ChatController {
 
 	private final ChatClientFactory chatClientFactory;
 	private final ConversationService conversationService;
 	private final ChatModel chatModel;
+	private final ObjectMapper objectMapper;
 
 	@Autowired
 	public ChatController(ChatClientFactory chatClientFactory,
-		ConversationService conversationService, ChatModel chatModel) {
+		ConversationService conversationService, ChatModel chatModel, ObjectMapper objectMapper) {
 		this.chatClientFactory = chatClientFactory;
 		this.conversationService = conversationService;
 		this.chatModel = chatModel;
+		this.objectMapper = objectMapper;
 	}
 
 
@@ -115,23 +120,31 @@ public class ChatController {
 
 		String[] questionArray = userQuestions.split("\\n");
 
-		StringBuilder combinedResponse = new StringBuilder();
+		List<ChatResponse> chatResponses = new ArrayList<>();
 
 		for (String q : questionArray) {
 			log.info("transformedMessage : {} ", q);
 
-
-			String response = client.prompt()
+			String rawOutput = client.prompt()
 				.user(q)
 				.advisors()
-				.call()
-				.content();
+				.call().content();
 
-			combinedResponse.append(response).append("\n\n"); // 응답 간 개행 추가
+			try {
+				ChatResponse chatResponse = objectMapper.readValue(rawOutput, ChatResponse.class);
+				chatResponses.add(chatResponse);
+			} catch (Exception e) {
+				log.warn("[ChatController] JSON 파싱 실패: {}", e.getMessage());
+
+				// fallback: LLM 응답을 그냥 텍스트로 넣기
+				ChatResponse fallback = new ChatResponse();
+				fallback.setMessage(rawOutput);
+				chatResponses.add(fallback);
+			}
 		}
 
-		String finalResponse = combinedResponse.toString().trim();
-		return ResponseEntity.ok(finalResponse);
+		// 여러 질문 → 여러 응답 (JSON 파싱된 ChatResponse 리스트)
+		return ResponseEntity.ok(chatResponses);
 
 	}
 }
