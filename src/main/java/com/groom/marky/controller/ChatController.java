@@ -21,7 +21,7 @@ import com.groom.marky.service.ConversationService;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
+
 @RestController
 @Slf4j
 public class ChatController {
