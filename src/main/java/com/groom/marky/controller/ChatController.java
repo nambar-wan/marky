@@ -5,15 +5,12 @@ import java.util.UUID;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.groom.marky.domain.request.CreateChatRequest;
@@ -21,7 +18,6 @@ import com.groom.marky.domain.request.CreateConversationRequest;
 import com.groom.marky.domain.response.ConversationResponse;
 import com.groom.marky.service.ChatClientFactory;
 import com.groom.marky.service.ConversationService;
-import com.groom.marky.service.UserService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,40 +26,29 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChatController {
 
-	private final ChatClient chatClient;
 	private final ChatClientFactory chatClientFactory;
 	private final ConversationService conversationService;
 	private final ChatModel chatModel;
 
 	@Autowired
-	public ChatController(ChatClient chatClient, ChatClientFactory chatClientFactory,
+	public ChatController(ChatClientFactory chatClientFactory,
 		ConversationService conversationService, ChatModel chatModel) {
-		this.chatClient = chatClient;
 		this.chatClientFactory = chatClientFactory;
 		this.conversationService = conversationService;
 		this.chatModel = chatModel;
 	}
 
-	@GetMapping("/ai")
-	public String chat(@RequestParam String message) {
 
-		ChatClient.CallResponseSpec response = chatClient.prompt()
-			.user(message)
-			.call();
-
-		return response.content();
-
-	}
-
-	/**
-	 * 아래는 테스트입니다.
-	 */
 	@PostMapping("/chat/ai")
-	public String chat(@RequestBody CreateChatRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<?> chat(@RequestBody CreateChatRequest request, @AuthenticationPrincipal UserDetails userDetails) {
 
-		String conversationId = request.getConversationId();
+		String conversationId = request.getCid();
 		String message = request.getMessage();
 		String userEmail = userDetails.getUsername();
+
+		log.info("message : {} ", message);
+
+		ChatClient chatClientWithoutAdvisor;
 
 		if (conversationId == null) {
 			// 첫 대화. 새로 생성
@@ -75,7 +60,7 @@ public class ChatController {
 
 			ConversationResponse conversationResponse = conversationService.create(conversationRequest);
 
-			ChatClient chatClientWithoutAdvisor = ChatClient.builder(chatModel).build();
+			chatClientWithoutAdvisor = ChatClient.builder(chatModel).build();
 
 			// 입력 메시지를 프롬프트로 사용하여 제목 생성
 			String title = chatClientWithoutAdvisor.prompt()
@@ -92,10 +77,61 @@ public class ChatController {
 
 		ChatClient client = chatClientFactory.create(conversationId);
 
-		return client.prompt()
+		// 사용자 입력에 다중 목적이 포함되어 있다면, 이를 2개 이상의 분리된 질문으로 나눔
+		chatClientWithoutAdvisor = ChatClient.builder(chatModel).build();
+
+		String userQuestions = chatClientWithoutAdvisor.prompt()
+			.system("""
+				   ""\"
+			 너는 사용자의 복합 질문을 의미 단위로 "분리"하는 역할만 수행해.
+			\s
+			 - 문장의 의미를 절대로 바꾸지 마.
+			 - 표현 방식이나 말투도 바꾸지 마.
+			 - 말 그대로, 원문을 그대로 유지하면서 "질문 단위"로 나누기만 해.
+			 - 각 문장은 줄바꿈(\\\\n)으로 구분해.
+			 - 리스트나 번호는 붙이지 마.
+			 - 띄어쓰기만 보정하는 건 괜찮아.
+				
+			 예시:
+			 입력: 홍대입구역 근처는??
+			 출력:
+			 홍대입구역 근처는??
+			\s
+			 입력: 강남역에서 파스타 먹고 영화 보고 싶어
+			 출력:
+			 강남역에서 파스타 먹고 싶어
+			 강남역에서 영화 보고 싶어
+				
+			 입력: 홍대에서 분위기 좋은 카페 갔다가, 저녁엔 신촌에서 조용한 식당 가고 싶어
+			 출력:
+			 홍대에서 분위기 좋은 카페 가고 싶어
+			 저녁엔 신촌에서 조용한 식당 가고 싶어
+			 ""\"
+				""")
 			.user(message)
 			.advisors()
 			.call()
 			.content();
+
+		String[] questionArray = userQuestions.split("\\n");
+
+		StringBuilder combinedResponse = new StringBuilder();
+
+		for (String q : questionArray) {
+			log.info("transformedMessage : {} ", q);
+
+
+			String response = client.prompt()
+				.user(q)
+				.advisors()
+				.call()
+				.content();
+
+			combinedResponse.append(response).append("\n\n"); // 응답 간 개행 추가
+		}
+
+		String finalResponse = combinedResponse.toString().trim();
+		return ResponseEntity.ok(finalResponse);
+
 	}
 }

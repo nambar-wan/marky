@@ -1,6 +1,7 @@
 package com.groom.marky.repository;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -24,15 +25,12 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 
 	private final ChatLogRepository chatLogRepository;
 	private final ConversationRepository conversationRepository;
-	private final UserRepository userRepository;
 
 	@Autowired
 	public CustomChatMemoryRepository(ChatLogRepository chatLogRepository,
-		ConversationRepository conversationRepository,
-		UserRepository userRepository) {
+		ConversationRepository conversationRepository) {
 		this.chatLogRepository = chatLogRepository;
 		this.conversationRepository = conversationRepository;
-		this.userRepository = userRepository;
 	}
 
 	/**
@@ -88,8 +86,7 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 	@Transactional
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
-
-		log.info("[CustomChatMemoryRepository] saveAll 진입. conversationId : {} ", conversationId);
+		log.info("[CustomChatMemoryRepository] saveAll 진입. conversationId : {}", conversationId);
 
 		Conversation conversation = conversationRepository.findConversationByConversationId(conversationId)
 			.orElse(null);
@@ -99,28 +96,36 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 			return;
 		}
 
-		log.warn("message size: {}", messages.size());
+		log.info("message size: {}", messages.size());
 
 		for (Message message : messages) {
-			log.warn("메시지 타입: {}", message.getClass().getSimpleName());
-			log.warn("내용: {}", message.getText());
-
 			if (message instanceof AssistantMessage) {
+				Map<String, Object> metadata = message.getMetadata();
 
-				String question = (String) message.getMetadata().get("question");
-				String answer = (String) message.getMetadata().get("answer");
-				Object rawUsage = message.getMetadata().get("usage");
+				if (metadata == null || metadata.isEmpty()) {
+					log.warn("저장 스킵: metadata가 비어 있음");
+					continue;
+				}
 
+				Object questionObj = metadata.get("question");
+				Object answerObj = metadata.get("answer");
+
+				if (!(questionObj instanceof String question) || !(answerObj instanceof String answer)) {
+					log.warn("저장 스킵: question 또는 answer가 null이거나 문자열이 아님. metadata={}", metadata);
+					continue;
+				}
 
 				int promptTokens = 0;
 				int completionTokens = 0;
 				int totalTokens = 0;
 
-
+				Object rawUsage = metadata.get("usage");
 				if (rawUsage instanceof Usage usage) {
 					promptTokens = usage.getPromptTokens();
 					completionTokens = usage.getCompletionTokens();
 					totalTokens = usage.getTotalTokens();
+				} else {
+					log.warn("usage 정보 없음 또는 형식 불일치. metadata={}", metadata);
 				}
 
 				ChatLog chatLog = ChatLog.builder()
@@ -132,17 +137,22 @@ public class CustomChatMemoryRepository implements ChatMemoryRepository {
 					.totalToken(totalTokens)
 					.build();
 
-				log.warn("저장 전: {}", chatLog);
+				log.info("chatLog 저장 전 호출. 사용자 질문 : {}, LLM 응답 : {}", chatLog.getQuestion(), chatLog.getAnswer());
 
 				conversation.addChatLog(chatLog);
 				chatLogRepository.save(chatLog);
 
-				/**
-				 * TODO : 유저 테이블에 사용량 갱신
-				 */
+			} else if (message instanceof UserMessage userMessage) {
+				// metadata가 없거나 question이 없다면 사용자 입력이 아님 (예: LLM이 유추한 메시지)
+				if (!message.getMetadata().containsKey("question")) {
+					log.info("유저 입력 아님. 저장 및 출력 생략: {}", message.getText());
+					continue;
+				}
+				log.info("UserMessage (실제 유저 입력): {}", userMessage.getText());
 			}
 		}
 	}
+
 
 	/**
 	 * 역할: 해당 대화 ID에 해당하는 메시지들을 DB에서 삭제
