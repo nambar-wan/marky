@@ -2,6 +2,7 @@ package com.groom.marky.service;
 
 import java.util.List;
 
+import com.groom.marky.service.tool.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -15,11 +16,6 @@ import com.groom.marky.service.advisor.LocationResolverAdvisor;
 import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
-import com.groom.marky.service.tool.ActivitySearchTool;
-import com.groom.marky.service.tool.ParkingLotSearchTool;
-import com.groom.marky.service.tool.RestaurantSearchTool;
-import com.groom.marky.service.tool.SimilaritySearchTool;
-import com.groom.marky.service.tool.SubwayRouteSearchTool;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +35,7 @@ public class ChatClientFactory {
 	private final ActivitySearchTool activitySearchTool;
 	private final RestaurantSearchTool restaurantSearchTool;
 	private final MultiPurposeActionAdvisor multiPurposeActionAdvisor;
+	private final CafeSearchTool cafeSearchTool;
 
 	public ChatClient create(String conversationId) {
 
@@ -48,7 +45,8 @@ public class ChatClientFactory {
 				placeVectorSearchTool,
 				activitySearchTool,
 				subwayRouteSearchTool,
-				restaurantSearchTool))
+				restaurantSearchTool,
+				cafeSearchTool))
 			.internalToolExecutionEnabled(true)
 			.build();
 

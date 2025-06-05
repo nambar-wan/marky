@@ -39,7 +39,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		2. similaritySearch(mood, ids)
 		3. searchActivity(lat, lon, activity_detail)
 		4. restaurantSearch(location, mood)
-		5. cafeSearch(lat, lon, mood)
+		5. searchCafe(lat, lon, mood)
 		6. getSubwayStationList(originLat, originLon, destLat, destLon)
 		
 		---
@@ -47,6 +47,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		️**도구 호출 규칙**
 		- context에 필요한 정보가 모두 있는 경우 도구를 호출해야 함
 		- 툴 호출 없이 답하지 말고, 결과를 바탕으로 사용자 응답 생성
+		- similaritySearch의 인자 중 ids는 List타입으로, searchParkingLots, searchActivity, restaurantSearch, searchCafe의 반환값이 손실없이 그대로 전달되어야 한다.
 		
 		---
 		
