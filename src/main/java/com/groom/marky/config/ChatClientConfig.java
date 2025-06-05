@@ -21,6 +21,7 @@ import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
 
+
 @EnableJpaAuditing
 @Configuration
 public class ChatClientConfig {
