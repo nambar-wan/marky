@@ -128,7 +128,17 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 		// 응답 담기
 		if (response != null && response.places() != null) {
-			places.addAll(response.places());
+
+			List<GooglePlacesApiResponse.Place> placesBeforeAdded = response.places();
+
+			for (GooglePlacesApiResponse.Place place : placesBeforeAdded) {
+				if (place.reviews() == null || place.reviews().isEmpty()) {
+					continue;
+				}
+				places.add(place);
+			}
+
+			//places.addAll(response.places());
 			nextPageToken = response.nextPageToken();
 		}
 
@@ -143,7 +153,15 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 			// 응답 담기
 			if (response != null && response.places() != null) {
-				places.addAll(response.places());
+				List<GooglePlacesApiResponse.Place> placesBeforeAdded = response.places();
+
+				for (GooglePlacesApiResponse.Place place : placesBeforeAdded) {
+					if (place.reviews() == null || place.reviews().isEmpty()) {
+						continue;
+					}
+					places.add(place);
+				}
+
 				nextPageToken = response.nextPageToken();
 			}
 		}
@@ -171,8 +189,9 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 			// 요청 생성
 			HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
 
-			GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
-					GooglePlacesApiResponse.class).getBody();
+			GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST,
+				httpEntity,
+				GooglePlacesApiResponse.class).getBody();
 
 			// 응답 담기
 			if (response != null && response.places() != null) {
@@ -184,7 +203,7 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 				request = buildRequest(text, rect, nextPageToken);
 				httpEntity = new HttpEntity<>(request, headers);
 				response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
-						GooglePlacesApiResponse.class).getBody();
+					GooglePlacesApiResponse.class).getBody();
 
 				if (response != null) {
 					if (response.places() != null && !response.places().isEmpty()) {
@@ -211,12 +230,12 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 
 	private static PlacesTextRequest buildRequest(String text, Rectangle rect, String pageToken) {
 		return PlacesTextRequest.builder()
-				.pageToken(pageToken)
-				.textQuery(text)
-				.languageCode(LANGUAGE_CODE)
-				.regionCode(REGION_CODE)
-				.locationRestriction(new PlacesTextRequest.RectangleWrapper(rect))
-				.build();
+			.pageToken(pageToken)
+			.textQuery(text)
+			.languageCode(LANGUAGE_CODE)
+			.regionCode(REGION_CODE)
+			.locationRestriction(new PlacesTextRequest.RectangleWrapper(rect))
+			.build();
 	}
 
 	@Override
@@ -250,8 +269,8 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 	public String searchPlaceId(String text) {
 		log.info("text : {}", text);
 		PlacesTextRequest request = PlacesTextRequest.builder()
-				.textQuery(text)
-				.build();
+			.textQuery(text)
+			.build();
 		log.info("request : {}", request.getTextQuery());
 		// 헤더 세팅
 		HttpHeaders headers = new HttpHeaders();
@@ -263,12 +282,12 @@ public class GooglePlaceSearchServiceImpl implements GooglePlaceSearchService {
 		HttpEntity<PlacesTextRequest> httpEntity = new HttpEntity<>(request, headers);
 		log.info("httpEntity : {}", httpEntity);
 		GooglePlacesApiResponse response = restTemplate.exchange(getGoogleSearchTextUri(), HttpMethod.POST, httpEntity,
-				GooglePlacesApiResponse.class).getBody();
+			GooglePlacesApiResponse.class).getBody();
 		String result = (response != null && response.places() != null && !response.places().isEmpty())
-				? response.places().getFirst().id()
-				: null;
+			? response.places().getFirst().id()
+			: null;
 		log.info(result);
-		return  result;
+		return result;
 	}
 
 	private URI getGoogleSearchTextUri() {
