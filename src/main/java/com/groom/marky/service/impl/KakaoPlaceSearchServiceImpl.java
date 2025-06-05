@@ -249,6 +249,62 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 		// Use GooglePlacesApiResponse.Place instead of raw String
 		return googlePlaceSearchService.search(keyword, kakaoResult);
 	}
+	@Override
+	public Map<String, Double> searchLocation(String keyword, String category_code) {
+		Map<String, Double> result = new HashMap<>();
+		JsonNode finalNode = null;
+
+		try {
+			boolean needFallback = false;
+
+			if (category_code != null && !category_code.isBlank() && !"null".equals(category_code)) {
+				try {
+					log.info("Category Search");
+
+					KakaoMapCategoryGroupCode categoryCode = KakaoMapCategoryGroupCode.valueOf(category_code.toUpperCase());
+					URI uri = buildLocationChangeKeywordUri(keyword, categoryCode);
+					ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
+					JsonNode documents = objectMapper.readTree(response.getBody()).path("documents");
+
+					if (documents.isArray() && !documents.isEmpty() && !documents.get(0).isNull()) {
+						finalNode = documents.get(0);
+						log.info("카테고리 검색 성공 → 좌표 : {}, {}", finalNode.path("x"), finalNode.path("y"));
+					} else {
+						needFallback = true;
+					}
+				} catch (IllegalArgumentException iae) {
+					log.warn("유효하지 않은 category: {}", category_code);
+					return result;
+				}
+			} else {
+				needFallback = true;
+			}
+
+			// Fallback to keyword search
+			if (finalNode == null && needFallback) {
+				log.info("Fallback: keyword search");
+				URI uri = buildKeywordUri(keyword);
+				ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, httpEntity, String.class);
+				JsonNode documents = objectMapper.readTree(response.getBody()).path("documents");
+
+				if (documents.isArray() && !documents.isEmpty()) {
+					finalNode = documents.get(0);
+					log.info("Fallback 검색 성공 → 좌표 : {}, {}", finalNode.path("x"), finalNode.path("y"));
+				}
+			}
+
+			if (finalNode != null) {
+				result.put("lat", finalNode.path("y").asDouble());
+				result.put("lon", finalNode.path("x").asDouble());
+			}
+
+		} catch (Exception e) {
+			log.warn("[KakaoPlaceSearchServiceImpl] search 예외 발생: keyword={}, message={}", keyword, e.getMessage());
+		}
+
+		return result;
+	}
+
 
 	@Override
 	public Map<Rectangle, Integer> getRectsMap(List<Rectangle> rects, KakaoMapCategoryGroupCode code){
@@ -332,6 +388,14 @@ public class KakaoPlaceSearchServiceImpl implements KakaoPlaceSearchService {
 			.queryParam("size", 15)
 			.queryParam("sort", ACCURACY_SORT)
 			.queryParam("rect", rect)
+			.queryParam("category_group_code", categoryGroupCode)
+			.encode(StandardCharsets.UTF_8)
+			.build().toUri();
+	}
+
+	private static URI buildLocationChangeKeywordUri(String keyword, KakaoMapCategoryGroupCode categoryGroupCode) {
+		return UriComponentsBuilder.fromUriString(KEYWORD_SEARCH_API_URI)
+			.queryParam("query", keyword)
 			.queryParam("category_group_code", categoryGroupCode)
 			.encode(StandardCharsets.UTF_8)
 			.build().toUri();
