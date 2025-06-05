@@ -1,11 +1,16 @@
 package com.groom.marky.service.advisor;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.context.annotation.Description;
 
@@ -89,10 +94,19 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		// 체인으로 전달
 		ChatClientResponse response = chain.nextCall(updatedRequest);
 
-		// 결과 로깅
-		log.info("api 응답: {}", response.chatResponse().getResult().getOutput());
-		log.info("toolCalls: {}", response.chatResponse().getResult().getOutput().getToolCalls());
-		log.info("metadata: {}", response.chatResponse().getResult().getOutput().getMetadata());
+
+		// 사용량 추출
+		Usage usage = response.chatResponse().getMetadata().getUsage();
+		UserMessage userMessage = request.prompt().getUserMessage();
+		AssistantMessage output = response.chatResponse().getResult().getOutput();
+
+		String userMessageText = userMessage.getText();
+		String outputText = output.getText();
+		log.info("userMessage : {}, output : {}", userMessageText, outputText);
+		output.getMetadata().put("question", userMessageText);
+		output.getMetadata().put("answer", outputText);
+		output.getMetadata().put("usage", usage); // Usage 객체 자체 저장
+
 
 		return response;
 	}
@@ -104,6 +118,6 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 
 	@Override
 	public int getOrder() {
-		return 4;
+		return 5;
 	}
 }

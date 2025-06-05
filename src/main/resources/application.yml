@@ -10,10 +10,23 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/marky
     username: postgres
     password: postgres
+
+    hikari:
+      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector
 
   ai:
     model:
@@ -27,7 +40,13 @@ spring:
           model: gpt-4o
           temperature: 0.4
           internal-tool-execution-enabled: true
-          max-tokens: 1024
+          # max-tokens: 1024
+
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: never
 
     ollama:
       base-url: http://localhost:11434/
@@ -35,6 +54,7 @@ spring:
         options:
           model: nomic-embed-text
           keep-alive: 5m
+
 
     vectorstore:
       pgvector:
@@ -51,6 +71,23 @@ spring:
       host: localhost
       port: 6379
 
+
+jwt:
+  duration:
+    access: 36000000      # 5분 = 1000 * 60 * 5
+    refresh: 604800000  # 7일 = 1000 * 60 * 60 * 24 * 7
+
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+    redirect-uri: "http://localhost:8080/auth/google/callback"
+    token-uri: "https://oauth2.googleapis.com/token"
+    user-info-uri: "https://www.googleapis.com/oauth2/v3/userinfo"
+
+
 logging:
   level:
     org.springframework.ai: DEBUG
+

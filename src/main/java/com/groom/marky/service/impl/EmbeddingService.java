@@ -100,4 +100,42 @@ public class EmbeddingService {
 		vectorStore.add(documents);
 	}
 
+	public void saveParkingLotsEmbeddings(GooglePlacesApiResponse apiResponse, DescriptionBuilder descriptionBuilder) {
+
+		List<Place> places = apiResponse.places();
+
+		/**
+		 *  "primaryTypeDisplayName": {
+		 *         "text": "주차장",
+		 *         "languageCode": "ko"
+		 *       },
+		 */
+		// UUID 비교, 업데이트..
+		List<Document> documents = places.stream()
+			.filter(place ->
+				place.primaryTypeDisplayName() != null &&
+					"주차장".equals(place.primaryTypeDisplayName().text())
+			)
+			.map(place -> {
+				String description = descriptionBuilder.buildDescription(place);
+				String id = UUID.nameUUIDFromBytes(place.id().getBytes(StandardCharsets.UTF_8)).toString();
+
+				return new Document(
+					id,
+					description, // 자연어
+					Map.of(
+						GOOGLEPLACEID, place.id(),
+						DISPLAYNAME, place.displayName().text(),
+						TYPE, descriptionBuilder.getType(),
+						LAT, place.location().latitude(),
+						LON, place.location().longitude(),
+						FORMATTEDADDRESS, place.formattedAddress(),
+						USERRATINGCOUNT, place.userRatingCount(),
+						RATING, place.rating()
+					));
+			}).toList();
+
+		vectorStore.add(documents);
+	}
+
 }

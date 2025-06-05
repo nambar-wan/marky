@@ -76,23 +76,17 @@ public class GoogleMapController {
 	@GetMapping("/load/parkinglot")
 	public ResponseEntity<?> searchText() {
 
-		// kakao cafe 57
+	/*	// kakao cafe 57
 		Rectangle box = new Rectangle(
 			127.0016985,
 			37.684949100000004,
 			127.055221,
 			37.715133);
-
-	//	Set<Rectangle> parkingLotRects = seoulPlaceSearchService.getParkingLotRects();
-		GooglePlacesApiResponse response = googlePlaceSearchService.search(PARKING_LOT_KEYWORD, GooglePlaceType.PARKING,
-			box);
-
-		embeddingService.saveEmbeddings(response, parkingLotDescriptionBuilder);
-		redisService.setPlacesLocation(GooglePlaceType.PARKING, response);
+*/
+		Set<Rectangle> parkingLotRects = seoulPlaceSearchService.getParkingLotRects();
 
 
-
-	/*	for (Rectangle rect : parkingLotRects) {
+		for (Rectangle rect : parkingLotRects) {
 			GooglePlacesApiResponse response =
 				googlePlaceSearchService.search(PARKING_LOT_KEYWORD, GooglePlaceType.PARKING, rect);
 
@@ -102,10 +96,9 @@ public class GoogleMapController {
 				continue;
 			}
 
-
-			embeddingService.saveEmbeddings(response, parkingLotDescriptionBuilder);
+			embeddingService.saveParkingLotsEmbeddings(response, parkingLotDescriptionBuilder);
 			redisService.setPlacesLocation(GooglePlaceType.PARKING, response);
-		}*/
+		}
 
 		log.info("임베딩 완료");
 
