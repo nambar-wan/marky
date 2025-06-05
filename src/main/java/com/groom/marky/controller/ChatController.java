@@ -1,5 +1,6 @@
 package com.groom.marky.controller;
 
+
 import java.util.UUID;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
+@Slf4j
 public class ChatController {
 
 	private final ChatClient chatClient;
@@ -44,6 +46,7 @@ public class ChatController {
 
 	@GetMapping("/ai")
 	public String chat(@RequestParam String message) {
+
 		ChatClient.CallResponseSpec response = chatClient.prompt()
 			.user(message)
 			.call();

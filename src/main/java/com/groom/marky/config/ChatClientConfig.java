@@ -26,11 +26,13 @@ import com.groom.marky.service.advisor.LocationResolverAdvisor;
 import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
+
 import com.groom.marky.service.tool.ActivitySearchTool;
 import com.groom.marky.service.tool.PlaceVectorSearchTool;
 import com.groom.marky.service.tool.RedisGeoSearchTool;
 import com.groom.marky.service.tool.RestaurantSearchTool;
 import com.groom.marky.service.tool.SubwayRouteSearchTool;
+
 
 @EnableJpaAuditing
 @Configuration
@@ -46,24 +48,25 @@ public class ChatClientConfig {
 
 	@Bean
 	public ChatClient chatClient(
-		ChatMemory chatMemory,
-		ChatModel model,
-		SystemRoleAdvisor systemRoleAdvisor,
-		UserIntentAdvisor userIntentAdvisor,
-		LocationResolverAdvisor locationResolverAdvisor,
-		ActivityDetailAdvisor activityDetailAdvisor,
-		RedisGeoSearchTool redisGeoSearchTool,
-		SubwayRouteSearchTool subwayRouteSearchTool,
-		PlaceVectorSearchTool placeVectorSearchTool,
-		ActivitySearchTool activitySearchTool,
-		RestaurantSearchTool restaurantSearchTool,
-		MultiPurposeActionAdvisor multiPurposeActionAdvisor) {
+			ChatMemory chatMemory,
+			ChatModel model,
+			SystemRoleAdvisor systemRoleAdvisor,
+			UserIntentAdvisor userIntentAdvisor,
+			LocationResolverAdvisor locationResolverAdvisor,
+			ActivityDetailAdvisor activityDetailAdvisor,
+			RedisGeoSearchTool redisGeoSearchTool,
+			SubwayRouteSearchTool subwayRouteSearchTool,
+			PlaceVectorSearchTool placeVectorSearchTool,
+			ActivitySearchTool activitySearchTool,
+			SubwayRouteAdvisor subwayRouteAdvisor,
+			RestaurantSearchTool restaurantSearchTool,
+			MultiPurposeActionAdvisor multiPurposeActionAdvisor,
+			CafeSearchTool cafeSearchTool) {
 
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(
-				ToolCallbacks.from(
-					redisGeoSearchTool, placeVectorSearchTool, activitySearchTool, subwayRouteSearchTool,
-					restaurantSearchTool))
+			.toolCallbacks(ToolCallbacks.from(redisGeoSearchTool, placeVectorSearchTool,
+				activitySearchTool, subwayRouteSearchTool, restaurantSearchTool, cafeSearchTool))
+
 			.internalToolExecutionEnabled(true)
 			.build();
 
