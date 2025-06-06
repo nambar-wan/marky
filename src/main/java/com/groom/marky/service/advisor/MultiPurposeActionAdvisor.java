@@ -38,7 +38,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		1. searchParkingLots(lat, lon)
 		2. similaritySearch(mood, ids)
 		3. searchActivity(lat, lon, activity_detail)
-		4. restaurantSearch(location, mood)
+		4. searchRestaurant(location, mood)
 		5. searchCafe(lat, lon, mood)
 		6. getSubwayStationList(originLat, originLon, destLat, destLon)
 		
