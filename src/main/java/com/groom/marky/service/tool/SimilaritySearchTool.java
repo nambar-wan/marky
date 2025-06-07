@@ -27,21 +27,21 @@ public class SimilaritySearchTool {
 	}
 
 	@Tool(
-		name = "similaritySearch",
-		description = """
+			name = "similaritySearch",
+			description = """
 		지정된 장소 ID 리스트(ids)를 기반으로 분위기(mood)와 의미적으로 유사한 장소를 5개 추천합니다.
 		pgvector 기반 벡터 임베딩을 활용하여 mood와 장소 설명 간의 유사도를 계산합니다.
 	"""
 	)
 	public List<Document> similaritySearch(
-		@ToolParam(description = "사용자가 원하는 분위기", required = true) String mood,
-		@ToolParam(description = "지정된 장소 리스트. 해당 아이디로 벡터 데이터베이스 메타데이터 조회. 대상 선정", required = true) List<String> ids
+			@ToolParam(description = "사용자가 원하는 분위기", required = true) String mood,
+			@ToolParam(description = "지정된 장소 리스트. 해당 아이디로 벡터 데이터베이스 메타데이터 조회. 대상 선정", required = true) List<String> ids
 	) {
 		log.info("[similaritySearch Tool 호출] mood : {}, ids : {}", mood, ids.size());
 
-		for (String id : ids) {
-			log.info("id: {}", id);
-		}
+//		for (String id : ids) {
+//			log.info("id: {}", id);
+//		}
 
 
 		if (mood == null || ids.isEmpty()) {
@@ -68,12 +68,12 @@ public class SimilaritySearchTool {
 
 		// 리필터?
 		return vectorStore.similaritySearch(
-			SearchRequest.builder()
-				.query(mood)
-				.topK(5)
-				.similarityThreshold(0.7)
-				.filterExpression(op.build())
-				.build());
+				SearchRequest.builder()
+						.query(mood)
+						.topK(5)
+						.similarityThreshold(0.7)
+						.filterExpression(op.build())
+						.build());
 
 	}
 

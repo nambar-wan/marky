@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.groom.marky.common.RedisKeyParser;
 import com.groom.marky.common.constant.GooglePlaceType;
-import com.groom.marky.service.impl.ActivityMetadataRepository;
+import com.groom.marky.repository.ActivityMetadataRepository;
 import com.groom.marky.service.impl.RedisService;
 
 import lombok.extern.slf4j.Slf4j;

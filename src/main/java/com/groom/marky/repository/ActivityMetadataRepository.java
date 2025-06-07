@@ -1,8 +1,7 @@
-package com.groom.marky.service.impl;
+package com.groom.marky.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.postgresql.util.PGobject;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
