@@ -64,6 +64,18 @@ public class RestaurantSearchTool {
 			log.info("주변에 리뷰가 있는 음식점이 없습니다. 리뷰가 없는 음식점을 포함하여 검색합니다.");
 			return nearbyPlacesId;
 		}
+
+		double editedRating = minRating;
+		List<String> prevList = restaurantsWithReview;
+		while(restaurantsWithReview.size() > 50){
+			prevList = restaurantsWithReview;
+			editedRating += 0.2;
+			if(editedRating >= 4.2) break;
+			restaurantsWithReview = restaurantRepository.findByIdWhenReviewIsExist(nearbyPlacesId, editedRating);
+			log.info("리뷰가 있고 평점이 {} 이상인 근처 음식점 ID 수: {}", editedRating, restaurantsWithReview.size());
+		}
+		restaurantsWithReview = prevList;
+
 		return restaurantsWithReview;
 
 	}
