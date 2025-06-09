@@ -16,6 +16,9 @@ import com.groom.marky.domain.response.ConversationResponse;
 import com.groom.marky.service.ChatLogService;
 import com.groom.marky.service.ConversationService;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping("/conversations")
 public class ConversationController {
@@ -40,8 +43,10 @@ public class ConversationController {
 	}
 
 
-	@GetMapping("{conversationId}/chats")
+	@GetMapping("/{conversationId}/chats")
 	public ResponseEntity<?> getChatsByConversationId(@PathVariable String conversationId) {
+
+		log.info("conversationId : {}", conversationId);
 
 		List<ChatLogResponse> chatLogs = chatLogService.findByConversationId(conversationId);
 

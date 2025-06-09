@@ -68,12 +68,12 @@ public class SimilaritySearchTool {
 
 		// 리필터?
 		return vectorStore.similaritySearch(
-				SearchRequest.builder()
-						.query(mood)
-						.topK(5)
-						.similarityThreshold(0.7)
-						.filterExpression(op.build())
-						.build());
+			SearchRequest.builder()
+				.query(mood)
+				.topK(5)
+				.similarityThreshold(0.7)
+				.filterExpression(op.build())
+				.build());
 
 	}
 

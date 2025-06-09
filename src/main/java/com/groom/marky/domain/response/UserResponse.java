@@ -13,7 +13,6 @@ import lombok.Setter;
 @Data
 public class UserResponse {
 
-	private Long id;
 	private String userEmail;
 	private String name;
 	private LoginType loginType;
@@ -23,7 +22,6 @@ public class UserResponse {
 	public static UserResponse from(User user) {
 
 		return UserResponse.builder()
-			.id(user.getId())
 			.userEmail(user.getUserEmail())
 			.name(user.getName())
 			.loginType(user.getLoginType())

@@ -306,12 +306,17 @@ public class JwtProvider {
 
 		String userEmail = claims.getSubject();
 		Role role = Role.valueOf(claims.get("role", String.class));
+		String ip = claims.get("ip",String.class);
+		String userAgent = claims.get("userAgent",String.class);
+
 		long expireAt = claims.getExpiration().getTime();
 
 		RefreshTokenInfo build = RefreshTokenInfo.builder()
 			.refreshToken(refreshToken)
 			.userEmail(userEmail)
+			.ip(ip)
 			.role(role)
+			.userAgent(userAgent)
 			.expiresAt(expireAt)
 			.build();
 
