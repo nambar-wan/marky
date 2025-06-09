@@ -16,6 +16,7 @@ import com.groom.marky.service.advisor.MultiPurposeActionAdvisor;
 import com.groom.marky.service.advisor.SystemRoleAdvisor;
 import com.groom.marky.service.advisor.UserIntentAdvisor;
 import com.groom.marky.service.tool.ActivitySearchTool;
+import com.groom.marky.service.tool.CafeSearchTool;
 import com.groom.marky.service.tool.ParkingLotSearchTool;
 import com.groom.marky.service.tool.RestaurantSearchTool;
 import com.groom.marky.service.tool.SimilaritySearchTool;
@@ -39,11 +40,13 @@ public class ChatClientFactory {
 	private final ActivitySearchTool activitySearchTool;
 	private final RestaurantSearchTool restaurantSearchTool;
 	private final MultiPurposeActionAdvisor multiPurposeActionAdvisor;
+	private final CafeSearchTool cafeSearchTool;
 
 	public ChatClient create(String conversationId) {
 
 		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(
+				cafeSearchTool,
 				redisGeoSearchTool,
 				placeVectorSearchTool,
 				activitySearchTool,

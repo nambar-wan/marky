@@ -12,6 +12,7 @@ import com.groom.marky.service.impl.RedisService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -29,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getRequestURI();
-		return path.startsWith("/auth"); // 필터 적용 제외 경로
+		return path.startsWith("/auth") || path.startsWith("/actuator");
 	}
 
 	@Override
@@ -47,6 +48,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		// 1. 토큰 추출
 		String accessToken = jwtProvider.resolveAccessToken(httpRequest);
+
+		if (accessToken == null) {
+			// 쿠키에서 accessToken 찾기
+			if (httpRequest.getCookies() != null) {
+				for (Cookie cookie : httpRequest.getCookies()) {
+					if ("accessToken".equals(cookie.getName())) {
+						accessToken = cookie.getValue();
+						break;
+					}
+				}
+			}
+		}
+
+
 		boolean isValid = jwtProvider.validateAccessToken(accessToken);
 
 		// 2. 블랙리스트 여부 확인

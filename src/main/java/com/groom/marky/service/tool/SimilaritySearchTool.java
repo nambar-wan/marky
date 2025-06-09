@@ -39,11 +39,6 @@ public class SimilaritySearchTool {
 	) {
 		log.info("[similaritySearch Tool 호출] mood : {}, ids : {}", mood, ids.size());
 
-		for (String id : ids) {
-			log.info("id: {}", id);
-		}
-
-
 		if (mood == null || ids.isEmpty()) {
 			log.warn("[PlaceVectorSearchTool:similaritySearch] 정보가 부족합니다.");
 			return List.of();
@@ -71,7 +66,7 @@ public class SimilaritySearchTool {
 			SearchRequest.builder()
 				.query(mood)
 				.topK(5)
-				.similarityThreshold(0.7)
+				.similarityThreshold(0.2)
 				.filterExpression(op.build())
 				.build());
 

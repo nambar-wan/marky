@@ -108,4 +108,13 @@ public class UserService {
 
 	}
 
+	public UserResponse findUserByEmail(String userEmail) {
+
+		User user = userRepository.findUserByUserEmail(userEmail).orElseThrow(
+			() -> new EntityNotFoundException("이메일에 해당하는 유저가 존재하지 않습니다.")
+		);
+
+		return UserResponse.from(user);
+	}
+
 }
