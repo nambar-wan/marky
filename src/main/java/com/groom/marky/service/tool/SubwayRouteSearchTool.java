@@ -1,18 +1,13 @@
 package com.groom.marky.service.tool;
 
 import com.groom.marky.common.TmapTransitClient;
-import com.groom.marky.domain.response.SubwayRouteDescriptionBuilder;
-import com.groom.marky.domain.response.SubwayRouteResponse;
+import com.groom.marky.domain.response.RouteDescriptionBuilder;
 import com.groom.marky.domain.response.TmapRouteResponse;
-import com.groom.marky.service.SubwayRouteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Slf4j
 @Component
@@ -49,6 +44,6 @@ public class SubwayRouteSearchTool {
 			return "지하철 경로를 찾을 수 없습니다.";
 		}
 
-		return SubwayRouteDescriptionBuilder.build(response);
+		return RouteDescriptionBuilder.build(response);
 	}
 }
