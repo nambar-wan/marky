@@ -11,7 +11,7 @@ import com.groom.marky.domain.response.TMapCongestionResponse;
 import com.groom.marky.service.TMapService;
 
 @RestController
-@RequestMapping("/tmap/congestions")
+@RequestMapping("/api/tmap/congestions")
 public class TMapController {
 
 	private final TMapService tMapService;
@@ -26,7 +26,7 @@ public class TMapController {
 		@RequestParam double lat,
 		@RequestParam double lng) {
 
-		TMapCongestionResponse response = tMapService.getCongestion(lat, lng);
+		TMapCongestionResponse response = tMapService.getSurroundingCongestion(lat, lng);
 		return ResponseEntity.ok(response);
 	}
 }

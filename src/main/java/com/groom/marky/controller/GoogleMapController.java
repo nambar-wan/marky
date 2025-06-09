@@ -191,24 +191,6 @@ public class GoogleMapController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
-	@GetMapping("/google/search/nearby")
-	public ResponseEntity<?> searchNearby() {
-
-		// 126.91844127777779,37.550798433333334,126.92141475000001,37.552475316666666, total : 42
-
-		// kakao cafe 50
-		Rectangle box = new Rectangle(
-			127.0016985,
-			37.684949100000004,
-			127.055221,
-			37.715133); // 50
-
-		// 응답
-		GooglePlacesApiResponse response = googlePlaceSearchService.searchNearby(List.of("restaurant"), box);
-
-		return new ResponseEntity<>(response, HttpStatus.OK);
-	}
-
 	@GetMapping("/activity")
 	public ResponseEntity<?> getActivity(@RequestParam("keyword") String keyword) {
 		GooglePlacesApiResponse response = seoulPlaceSearchService.getActivityRects(keyword);
