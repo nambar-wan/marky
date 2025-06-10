@@ -23,6 +23,7 @@ public class CafeSearchTool {
 	private final RedisService redisService;
 	private final CafeRepository cafeRepository;
 	private double searchRadiusKm = 0.5;
+	private double minRating = 4.0;
 
 	@Tool(
 		name = "searchCafe",
@@ -46,20 +47,35 @@ public class CafeSearchTool {
 
 		String key = RedisKeyParser.getPlaceKey(GooglePlaceType.CAFE);
 		log.info("key : {}", key);
-		List<String> nearbyPlacesId = redisService.getNearbyPlacesId(key, lat, lon, searchRadiusKm);
+		List<String> nearbyPlacesId =
+				redisService.getNearbyPlacesId(key, lat, lon, searchRadiusKm);
 		log.info("근처 카페 ID 수: {}", nearbyPlacesId.size());
 
 		if (nearbyPlacesId.isEmpty())
 			return List.of();
 
 
-		List<String> cafesWithReview = cafeRepository.findByIdWhenReviewIsExist(nearbyPlacesId);
-		log.info("리뷰가 있는 근처 카페 ID 수: {}", cafesWithReview.size());
+		List<String> cafesWithReview =
+				cafeRepository.findByIdWhenReviewIsExist(nearbyPlacesId, minRating);
+		log.info("리뷰가 있고 평점이 {} 이상인 근처 카페 ID 수: {}", minRating, cafesWithReview.size());
 
 		if (cafesWithReview.size() == 0) {
 			log.info("주변에 리뷰가 있는 카페가 없습니다. 리뷰가 없는 카페를 포함하여 검색합니다.");
 			return nearbyPlacesId;
 		}
+
+		double editedRating = minRating;
+		List<String> prevList = cafesWithReview;
+		while(cafesWithReview.size() > 50){
+			prevList = cafesWithReview;
+			editedRating += 0.2;
+			if(editedRating >= 4.2) break;
+			cafesWithReview = cafeRepository.findByIdWhenReviewIsExist(nearbyPlacesId, editedRating);
+			log.info("리뷰가 있고 평점이 {} 이상인 근처 음식점 ID 수: {}", editedRating, cafesWithReview.size());
+		}
+		cafesWithReview = prevList;
+
+
 		return cafesWithReview;
 	}
 
