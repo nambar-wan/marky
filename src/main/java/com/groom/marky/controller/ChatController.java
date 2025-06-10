@@ -133,8 +133,11 @@ public class ChatController {
 				.content();
 
 			try {
+				double start = System.currentTimeMillis();
 				ChatResponse chatResponse = objectMapper.readValue(rawOutput, ChatResponse.class);
 				chatResponses.add(chatResponse);
+				double end = System.currentTimeMillis();
+				log.info("Object Mapper Time Cost : {} ms", end - start);
 			} catch (Exception e) {
 				log.warn("[ChatController] JSON 파싱 실패: {}", e.getMessage());
 

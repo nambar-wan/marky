@@ -61,8 +61,8 @@ spring:
         enabled: true
 
     ollama:
-      base-url: http://localhost:11434/
-#      base-rul: https://34dd-211-195-194-162.ngrok-free.app/
+#      base-url: http://localhost:11434/
+      base-rul: https://34dd-211-195-194-162.ngrok-free.app/
       embedding:
         options:
           model: nomic-embed-text

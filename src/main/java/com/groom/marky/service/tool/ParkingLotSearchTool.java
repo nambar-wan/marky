@@ -2,6 +2,7 @@ package com.groom.marky.service.tool;
 
 import java.util.List;
 
+import org.springframework.ai.document.Document;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,15 +14,18 @@ import com.groom.marky.service.impl.RedisService;
 
 import lombok.extern.slf4j.Slf4j;
 
+
 @Slf4j
 @Component
 public class ParkingLotSearchTool {
 
 	private final RedisService redisService;
+	private final SimilaritySearchTool similaritySearchTool;
 
 	@Autowired
-	public ParkingLotSearchTool(RedisService redisService) {
+	public ParkingLotSearchTool(RedisService redisService, SimilaritySearchTool similaritySearchTool) {
 		this.redisService = redisService;
+		this.similaritySearchTool = similaritySearchTool;
 	}
 
 	@Tool(
@@ -32,18 +36,22 @@ public class ParkingLotSearchTool {
 		반환된 ID는 이후 similaritySearch에서 유사 장소 추천 등에 사용됩니다.
 	"""
 	)
-	public List<String> searchParkingLots(
+	public List<Document> searchParkingLots(
 		@ToolParam(description = "사용자 목적지 위도값", required = true) Double lat,
-		@ToolParam(description = "사용자 목적지 경도값", required = true) Double lon
+		@ToolParam(description = "사용자 목적지 경도값", required = true) Double lon,
+		@ToolParam(description = "사용자 요구 분위기 리스트", required = true) String mood
 	) {
 
 		log.info("[searchParkingLots Tool 호출] 위도 : {}, 경도 : {}", lat, lon);
+		log.info("사용자 요구 사항 : {}", mood);
 
 		String key = RedisKeyParser.getPlaceKey(GooglePlaceType.PARKING);
 		// place:parking
 
 		// 필요한건?? 근처 주차장 조회다..
-		return redisService.getNearbyPlacesId(key, lat, lon, 1);
+		List<String> nearbyPlacesId = redisService.getNearbyPlacesId(key, lat, lon, 1);
+
+		return similaritySearchTool.similaritySearch(mood, nearbyPlacesId);
 
 	}
 

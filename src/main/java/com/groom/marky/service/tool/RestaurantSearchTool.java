@@ -26,8 +26,9 @@ public class RestaurantSearchTool {
 	private final VectorStore vectorStore;
 	private final RedisService redisService;
 	private final RestaurantRepository restaurantRepository;
-	private double searchRadiusKm = 1;
-	private double minRating = 3.5;
+	private double searchRadiusKm = 2;
+//	private double minRating = 3.5;
+	private final SimilaritySearchTool similaritySearchTool;
 
 	@Tool(
 			name = "searchRestaurant",
@@ -36,7 +37,7 @@ public class RestaurantSearchTool {
 			반환된 아이디들을 db에서 검색하여 db에 임베딩된 벡터 값을 이용하여 유사도 검색(similaritySearch)에 사용됩니다.
 			"""
 	)
-	public List<String> searchRestaurant(
+	public List<Document> searchRestaurant(
 			@ToolParam(description = "사용자 목적지 위도값", required = true) Double lat,
 			@ToolParam(description = "사용자 목적지 경도값", required = true) Double lon,
 			@ToolParam(description = "사용자 요구 분위기 리스트", required = true) String mood
@@ -56,28 +57,29 @@ public class RestaurantSearchTool {
 
 		if(nearbyPlacesId.isEmpty()) return List.of();
 
-		List<String> restaurantsWithReview = restaurantRepository.findByIdWhenReviewIsExist(nearbyPlacesId, minRating);
-		log.info("리뷰가 있고 평점이 {} 이상인 근처 음식점 ID 수: {}", minRating, restaurantsWithReview.size());
+//		List<String> restaurantsWithReview = restaurantRepository.findByIdWhenReviewIsExist(nearbyPlacesId, minRating);
+//		log.info("리뷰가 있고 평점이 {} 이상인 근처 음식점 ID 수: {}", minRating, restaurantsWithReview.size());
+//
+//
+//		if(restaurantsWithReview.size() == 0) {
+//			log.info("주변에 리뷰가 있는 음식점이 없습니다. 리뷰가 없는 음식점을 포함하여 검색합니다.");
+//			return nearbyPlacesId;
+//		}
 
+//		double editedRating = minRating;
+//		List<String> prevList = restaurantsWithReview;
+//		while(restaurantsWithReview.size() > 50){
+//			prevList = restaurantsWithReview;
+//			editedRating += 0.2;
+//			if(editedRating >= 4.2) break;
+//			restaurantsWithReview = restaurantRepository.findByIdWhenReviewIsExist(nearbyPlacesId, editedRating);
+//			log.info("리뷰가 있고 평점이 {} 이상인 근처 음식점 ID 수: {}", editedRating, restaurantsWithReview.size());
+//		}
+//		restaurantsWithReview = prevList;
 
-		if(restaurantsWithReview.size() == 0) {
-			log.info("주변에 리뷰가 있는 음식점이 없습니다. 리뷰가 없는 음식점을 포함하여 검색합니다.");
-			return nearbyPlacesId;
-		}
+//		return restaurantsWithReview;
 
-		double editedRating = minRating;
-		List<String> prevList = restaurantsWithReview;
-		while(restaurantsWithReview.size() > 50){
-			prevList = restaurantsWithReview;
-			editedRating += 0.2;
-			if(editedRating >= 4.2) break;
-			restaurantsWithReview = restaurantRepository.findByIdWhenReviewIsExist(nearbyPlacesId, editedRating);
-			log.info("리뷰가 있고 평점이 {} 이상인 근처 음식점 ID 수: {}", editedRating, restaurantsWithReview.size());
-		}
-		restaurantsWithReview = prevList;
-
-		return restaurantsWithReview;
-
+		return similaritySearchTool.similaritySearch(mood, nearbyPlacesId);
 	}
 
 //	@Tool(

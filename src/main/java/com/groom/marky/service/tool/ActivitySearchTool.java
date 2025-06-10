@@ -3,6 +3,7 @@ package com.groom.marky.service.tool;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.document.Document;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -23,13 +24,15 @@ public class ActivitySearchTool {
 	private final RedisService redisService;
 	private final VectorStore vectorStore;
 	private final ActivityMetadataRepository activityMetadataRepository;
+	private final SimilaritySearchTool similaritySearchTool;
 
 	@Autowired
 	public ActivitySearchTool(RedisService redisService, VectorStore vectorStore,
-		ActivityMetadataRepository activityMetadataRepository) {
+		ActivityMetadataRepository activityMetadataRepository, SimilaritySearchTool similaritySearchTool) {
 		this.redisService = redisService;
 		this.vectorStore = vectorStore;
 		this.activityMetadataRepository = activityMetadataRepository;
+		this.similaritySearchTool = similaritySearchTool;
 	}
 
 	@Tool(
@@ -39,10 +42,11 @@ public class ActivitySearchTool {
 		Redis Geo 데이터를 활용해 빠르게 인근 액티비티를 탐색하며, 결과는 유사도 검색(similaritySearch) 등에 활용됩니다.
 	"""
 	)
-	public List<String> searchActivity(
+	public List<Document> searchActivity(
 		@ToolParam(description = "사용자 목적지 위도값", required = true) Double lat,
 		@ToolParam(description = "사용자 목적지 경도값", required = true) Double lon,
-		@ToolParam(description = "액티비티", required = true) String activity_detail
+		@ToolParam(description = "액티비티", required = true) String activity_detail,
+		@ToolParam(description = "사용자 요구 분위기 리스트", required = true) String mood
 
 	) {
 
@@ -58,7 +62,9 @@ public class ActivitySearchTool {
 			activity_detail, nearbyPlacesId);
 		log.info("byActivityTypeAndPlaceIds 필터링된 Document : {}, 수: {}", byActivityTypeAndPlaceIds,
 			byActivityTypeAndPlaceIds.size());
-		return byActivityTypeAndPlaceIds;
+
+
+		return similaritySearchTool.similaritySearch(mood, byActivityTypeAndPlaceIds) ;
 	}
 
 }

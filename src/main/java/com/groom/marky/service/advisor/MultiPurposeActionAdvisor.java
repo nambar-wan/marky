@@ -35,9 +35,8 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		---
 		
 		사용할 수 있는 도구들:
-		1. searchParkingLots(lat, lon)
-		2. similaritySearch(mood, ids)
-		3. searchActivity(lat, lon, activity_detail)
+		1. searchParkingLots(lat, lon, mood)
+		3. searchActivity(lat, lon, activity_detail, mood)
 		4. searchRestaurant(location, mood)
 		5. searchCafe(lat, lon, mood)
 		6. getSubwayStationList(originLat, originLon, destLat, destLon)
@@ -52,23 +51,23 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		---
 		
 		**최종 응답 출력 규칙**
-		- 아래 JSON 형태로만 출력해야 함 (절대 설명하지 마)
-		```json ``` 으로 감싸지 마.
-		- ChatResponse 형식:
-		{
-		  \"message\": \"사용자에게 보여줄 요약 메시지\",
-		  \"places\": [
-		    {
-		      \"name\": \"...\",
-		      \"address\": \"...\",
-		      \"latitude\": 0.0,
-		      \"longitude\": 0.0,
-		      \"rating\": 0.0,
-		      \"reviewCount\": 0,
-		      \"reviewSummary\": \"...\"
-		    }
-		  ]
-		}
+			- 아래 JSON 형태로만 출력해야 함 (절대 설명하지 마)
+			```json ``` 으로 감싸지 마.
+					- ChatResponse 형식:
+			{
+				"message": "사용자에게 보여줄 요약 메시지",
+					"places": [
+				{
+					"name": "...",
+						"address": "...",
+						"latitude": 0.0,
+						"longitude": 0.0,
+						"rating": 0.0,
+						"reviewCount": 0,
+						"reviewSummary": "..."
+				}
+			  ]
+			}
 	""";
 
 	@Override

@@ -36,7 +36,7 @@ public class ChatClientFactory {
 	private final ActivityDetailAdvisor activityDetailAdvisor;
 	private final ParkingLotSearchTool redisGeoSearchTool;
 	private final SubwayRouteSearchTool subwayRouteSearchTool;
-	private final SimilaritySearchTool placeVectorSearchTool;
+//	private final SimilaritySearchTool placeVectorSearchTool;
 	private final ActivitySearchTool activitySearchTool;
 	private final RestaurantSearchTool restaurantSearchTool;
 	private final MultiPurposeActionAdvisor multiPurposeActionAdvisor;
@@ -48,7 +48,7 @@ public class ChatClientFactory {
 			.toolCallbacks(ToolCallbacks.from(
 				cafeSearchTool,
 				redisGeoSearchTool,
-				placeVectorSearchTool,
+//				placeVectorSearchTool,
 				activitySearchTool,
 				subwayRouteSearchTool,
 				restaurantSearchTool))
