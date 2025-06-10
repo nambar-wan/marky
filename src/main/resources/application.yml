@@ -12,7 +12,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -21,7 +21,7 @@ spring:
 
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/marky
+    url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
     password: postgres
 
@@ -61,8 +61,8 @@ spring:
         enabled: true
 
     ollama:
-      base-url: http://localhost:11434/
-      #base-url: https://4964-211-195-194-162.ngrok-free.app
+#      base-url: http://localhost:11434/
+      base-rul: https://34dd-211-195-194-162.ngrok-free.app/
       embedding:
         options:
           model: nomic-embed-text
