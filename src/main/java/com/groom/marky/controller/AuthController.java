@@ -1,6 +1,10 @@
 package com.groom.marky.controller;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -23,7 +27,9 @@ import com.groom.marky.service.impl.JwtService;
 import com.groom.marky.service.impl.RedisService;
 
 import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +43,6 @@ public class AuthController {
 	 * 1. 로그인 -> DB조회, 유저 확인 후 액세스 토큰, 리프레쉬 토큰 밝브 ->  레디스에 리프레쉬 토큰 저장(유저,토큰, Ip, 접근기기)
 	 * 2. 로그아웃 -> 시큐리티 경로 지정. Authentication 삭제, 리프레쉬 토큰 삭제
 	 * 3. 리프레쉬 토큰을 통한 액세스 토큰 재발급. -> 리프레쉬 토큰 검증(유저,토큰,Ip,접근기기) -> 액세스 토큰, 리프레쉬 토큰 재발급 -> 레디스에 리프레쉬 토큰 저장
-	 * 4.
 	 */
 
 	private final UserService userService;
@@ -123,6 +128,68 @@ public class AuthController {
 		return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
 	}
 
+	@PostMapping("/webclient-login")
+	public ResponseEntity<?> webClientLogin(@RequestBody @Valid LoginRequest loginRequest,
+		HttpServletRequest httpRequest,
+		HttpServletResponse httpResponse) throws IOException {
+
+		// 1. 유저 검증
+		UserResponse userResponse = userService.validate(loginRequest);
+
+		String userEmail = userResponse.getUserEmail();
+		Role role = userResponse.getRole();
+		String ip = httpRequest.getRemoteAddr();
+		String userAgent = httpRequest.getHeader("User-Agent");
+
+		// 2. 토큰 생성
+		CreateToken createToken = new CreateToken(userEmail, role, ip, userAgent);
+		TokenResponse tokens = jwtService.getTokens(createToken);
+		String accessToken = tokens.getAccessToken();
+		String refreshToken = tokens.getRefreshToken();
+		long refreshTokenExpiry = jwtService.getRefreshTokenExpiry(refreshToken);
+
+		// 3. Redis 저장
+		redisService.deleteRefreshTokenByKey(userEmail);
+		redisService.setRefreshToken(RefreshTokenInfo.builder()
+			.ip(ip)
+			.userAgent(userAgent)
+			.userEmail(userEmail)
+			.role(role)
+			.refreshToken(refreshToken)
+			.expiresAt(refreshTokenExpiry)
+			.build());
+
+
+		// **수정 부분:** 토큰을 HttpOnly 쿠키로 설정하고 응답 본문 없이 반환
+		ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
+			.httpOnly(true)
+			.secure(false) // HTTPS 배포 시 true
+			.path("/")
+			.domain("localhost") // 개발 환경 고려
+			.sameSite("Lax")
+			.maxAge(900) // 15분
+			.build();
+
+		ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+			.httpOnly(true)
+			.secure(false)
+			.path("/")
+			.domain("localhost") // 개발 환경 고려
+			.sameSite("Lax")
+			.maxAge((int) refreshTokenExpiry)
+			.build();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
+		headers.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+		log.info("header : {} ", headers);
+
+		// 5. 응답은 바디 없이 200 OK와 함께 쿠키 헤더 반환
+		return ResponseEntity.ok().headers(headers).build();
+
+	}
+
 	/**
 	 * 로그아웃
 	 * 1. 액세스 토큰, 리프레쉬 토큰 검증
@@ -135,13 +202,19 @@ public class AuthController {
 	 * @return
 	 * @throws JsonProcessingException
 	 */
+	// /auth/logout
 	@PostMapping("/logout")
-	public ResponseEntity<Void> logout(HttpServletRequest httpRequest) throws JsonProcessingException {
+	public ResponseEntity<Void> logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws JsonProcessingException {
+
+		log.info("로그아웃 요청");
 
 		// 액세스 토큰, 리프레쉬 토큰 검증 후 추출
-		TokenResponse tokenResponse = jwtService.validateToken(httpRequest);
-		String accessToken = tokenResponse.getAccessToken();
-		String refreshToken = tokenResponse.getRefreshToken();
+		String accessToken = resolveAccessTokenFromHeaderOrCookie(httpRequest);
+		String refreshToken = resolveRefreshTokenFromHeaderOrCookie(httpRequest);
+
+		if (accessToken == null || refreshToken == null) {
+			throw new JwtException("토큰이 없습니다.");
+		}
 
 		// 액세스 토큰 정보 추출
 		AccessTokenInfo accessTokenInfo = jwtService.getAccessTokenInfo(accessToken);
@@ -161,7 +234,7 @@ public class AuthController {
 		boolean isValid = jwtService.validateClaims(accessTokenInfo, refreshTokenInfoFromRedis);
 
 		if (!isValid) {
-			throw new JwtException("토큰 정보가 유효하지 않습니다. ");
+			throw new JwtException("토큰 정보가 유효하지 않습니다.");
 		}
 
 		// 검증 완료. 리프레쉬 토큰 삭제 및 남은 액세스 토큰 블랙리스트 등록.
@@ -171,66 +244,143 @@ public class AuthController {
 		// 시큐리티 컨텍스트에서 유저정보 제거
 		SecurityContextHolder.clearContext();
 
+		// 쿠키 삭제
+		ResponseCookie clearAccess = ResponseCookie.from("accessToken", "")
+			.path("/")
+			.httpOnly(true)
+			.secure(false)  // HTTPS 환경일 경우 true
+			.maxAge(0)
+			.build();
+
+		ResponseCookie clearRefresh = ResponseCookie.from("refreshToken", "")
+			.path("/")
+			.httpOnly(true)
+			.secure(false)
+			.maxAge(0)
+			.build();
+
+		httpResponse.addHeader("Set-Cookie", clearAccess.toString());
+		httpResponse.addHeader("Set-Cookie", clearRefresh.toString());
+
 		return ResponseEntity.ok().build();
 	}
 
+
 	@PostMapping("/token/refresh")
-	public ResponseEntity<?> reissueAccessToken(HttpServletRequest httpRequest) throws JsonProcessingException {
+	public ResponseEntity<?> reissueAccessToken(HttpServletRequest httpRequest,
+		HttpServletResponse httpResponse) throws JsonProcessingException {
 
-		// 요청으로 전달된 토큰 검증
-		TokenResponse tokenResponse = jwtService.validateTokenAllowExpired(httpRequest);
-		String accessToken = tokenResponse.getAccessToken();
-		String refreshToken = tokenResponse.getRefreshToken();
+		// 쿠키 또는 헤더에서 accessToken, refreshToken 추출
+		String accessToken = resolveAccessTokenFromHeaderOrCookie(httpRequest);
+		String refreshToken = resolveRefreshTokenFromHeaderOrCookie(httpRequest);
 
-		// 액세스 토큰 블랙리스트 여부 확인
-		boolean isBlacklisted = redisService.isInBlacklist(accessToken);
-		if (isBlacklisted) {
+		if (accessToken == null || refreshToken == null) {
+			throw new JwtException("토큰이 없습니다.");
+		}
+
+		// 블랙리스트 확인
+		if (redisService.isInBlacklist(accessToken)) {
 			throw new JwtException("블랙리스트에 등록된 액세스 토큰입니다.");
 		}
 
-		// 사용자가 보낸 액세스 토큰과 레디스 내부의 리프레쉬 토큰 검증
+		// 기존 accessToken의 클레임 파싱 (만료 허용)
 		AccessTokenInfo accessTokenInfo = jwtService.getAllowedExpiredAccessTokenInfo(accessToken);
+
+		// Redis에 저장된 refreshToken 정보 조회
 		RefreshTokenInfo refreshTokenInfoFromRedis = redisService.getRefreshToken(accessTokenInfo.getUserEmail());
 
 		if (!refreshToken.equals(refreshTokenInfoFromRedis.getRefreshToken())) {
 			throw new JwtException("리프레쉬 토큰이 유효하지 않습니다.");
 		}
 
-		boolean isValid = jwtService.validateClaims(accessTokenInfo, refreshTokenInfoFromRedis);
-		if (!isValid) {
+		if (!jwtService.validateClaims(accessTokenInfo, refreshTokenInfoFromRedis)) {
 			throw new JwtException("토큰 정보가 유효하지 않습니다.");
 		}
 
-		// 검증 완료. 액세스 토큰 및 리프레쉬 토큰 재발급
+		// 새 토큰 발급
+		String userEmail = accessTokenInfo.getUserEmail();
 		String requestIp = httpRequest.getRemoteAddr();
 		String requestUserAgent = httpRequest.getHeader("User-Agent");
-		String userEmail = accessTokenInfo.getUserEmail();
 		Role role = accessTokenInfo.getRole();
+
 		CreateToken createToken = new CreateToken(userEmail, role, requestIp, requestUserAgent);
+		TokenResponse newTokens = jwtService.getTokens(createToken);
 
-		TokenResponse createTokens = jwtService.getTokens(createToken);
-		String regeneratedRefreshToken = createTokens.getRefreshToken();
-		long refreshTokenExpiry = jwtService.getRefreshTokenExpiry(regeneratedRefreshToken);
+		String newAccessToken = newTokens.getAccessToken();
+		String newRefreshToken = newTokens.getRefreshToken();
+		long refreshTokenExpiry = jwtService.getRefreshTokenExpiry(newRefreshToken);
 
-		// 기존 리프레쉬 토큰은 레디스에서 삭제
+		// Redis 업데이트
 		redisService.deleteRefreshToken(refreshTokenInfoFromRedis);
-
-		// 재생성된 리프레쉬 토큰 레디스에 저장
-		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
+		redisService.setRefreshToken(RefreshTokenInfo.builder()
 			.ip(requestIp)
 			.role(role)
 			.userAgent(requestUserAgent)
-			.refreshToken(regeneratedRefreshToken)
+			.refreshToken(newRefreshToken)
 			.userEmail(userEmail)
 			.expiresAt(refreshTokenExpiry)
-			.build();
+			.build());
 
-		redisService.setRefreshToken(tokenInfo);
-
-		// 이전 액세스 토큰은 블랙리스트 등록
+		// 기존 accessToken은 블랙리스트에 등록
 		redisService.registerBlacklist(accessToken, accessTokenInfo.getExpiresAt());
 
-		return ResponseEntity.ok(createTokens);
+		// 새 토큰을 HttpOnly 쿠키로 설정
+		ResponseCookie accessCookie = ResponseCookie.from("accessToken", newAccessToken)
+			.httpOnly(true)
+			.secure(false) // HTTPS 환경에선 true
+			.path("/")
+			.sameSite("Lax")
+			.maxAge(900)
+			.build();
+
+		ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken)
+			.httpOnly(true)
+			.secure(false)
+			.path("/")
+			.sameSite("Lax")
+			.maxAge((int) refreshTokenExpiry)
+			.build();
+
+		httpResponse.addHeader("Set-Cookie", accessCookie.toString());
+		httpResponse.addHeader("Set-Cookie", refreshCookie.toString());
+
+		return ResponseEntity.ok().body("{\"message\": \"토큰이 재발급되었습니다.\"}");
+	}
+
+	private String resolveAccessTokenFromHeaderOrCookie(HttpServletRequest request) {
+		String bearer = request.getHeader("Authorization");
+		if (bearer != null && bearer.startsWith("Bearer ")) {
+			return bearer.substring(7);
+		}
+
+		// 헤더 없으면 쿠키에서 찾기
+		if (request.getCookies() != null) {
+			for (Cookie cookie : request.getCookies()) {
+				if ("accessToken".equals(cookie.getName())) {
+					return cookie.getValue();
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private String resolveRefreshTokenFromHeaderOrCookie(HttpServletRequest request) {
+		String refreshToken = request.getHeader("X-Refresh-Token");
+
+		if (refreshToken != null && !refreshToken.isBlank()) {
+			return refreshToken;
+		}
+
+		if (request.getCookies() != null) {
+			for (Cookie cookie : request.getCookies()) {
+				if ("refreshToken".equals(cookie.getName())) {
+					return cookie.getValue();
+				}
+			}
+		}
+
+		return null;
 	}
 
 }

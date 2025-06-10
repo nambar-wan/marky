@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.groom.marky.domain.Role;
@@ -20,12 +21,13 @@ import com.groom.marky.service.impl.GoogleOAuthService;
 import com.groom.marky.service.impl.JwtService;
 import com.groom.marky.service.impl.RedisService;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Controller
+@RestController
 @RequestMapping("/auth")
 public class OAuthLoginController {
 
@@ -52,8 +54,8 @@ public class OAuthLoginController {
 
 	// http://localhost:8080/auth/google/callback
 	@GetMapping("/google/callback")
-	public ResponseEntity<?> callback(@RequestParam String code, HttpServletRequest request) throws
-		JsonProcessingException {
+	public void callback(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws
+		IOException {
 		log.info("Google OAuth 인증 코드 수신: {}", code);
 
 
@@ -84,10 +86,24 @@ public class OAuthLoginController {
 
 		TokenResponse tokens = jwtService.getTokens(createToken);
 
+		Cookie accessTokenCookie = new Cookie("accessToken", tokens.getAccessToken());
+		accessTokenCookie.setHttpOnly(true);
+		accessTokenCookie.setSecure(false); // 개발 환경에서는 false
+		accessTokenCookie.setPath("/");
+		response.addCookie(accessTokenCookie);
+
+		Cookie refreshTokenCookie = new Cookie("refreshToken", tokens.getRefreshToken());
+		refreshTokenCookie.setHttpOnly(true);
+		refreshTokenCookie.setSecure(false); // 개발 환경에서는 false
+		refreshTokenCookie.setPath("/");
+		response.addCookie(refreshTokenCookie);
+
+
 		// 5. 레디스 저장
 		redisService.setRefreshToken(jwtService.getRefreshTokenInfo(tokens));
 
-		return ResponseEntity.ok(tokens);
+		// refreshToken 도 동일하게
+		response.sendRedirect("http://localhost:3000/main");
 	}
 
 }

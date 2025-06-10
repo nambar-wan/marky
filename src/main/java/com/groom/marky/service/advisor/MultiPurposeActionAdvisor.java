@@ -53,6 +53,7 @@ public class MultiPurposeActionAdvisor implements CallAdvisor {
 		
 		**최종 응답 출력 규칙**
 		- 아래 JSON 형태로만 출력해야 함 (절대 설명하지 마)
+		```json ``` 으로 감싸지 마.
 		- ChatResponse 형식:
 		{
 		  \"message\": \"사용자에게 보여줄 요약 메시지\",

@@ -12,7 +12,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -21,7 +21,7 @@ spring:
 
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/marky
     username: postgres
     password: postgres
 
@@ -48,8 +48,21 @@ spring:
           jdbc:
             initialize-schema: never
 
+      observations:
+        log-prompt: false       # 프롬프트 로그 찍기
+        log-completion: false   # 모델 응답 로그 찍기
+        include-error-logging: true
+
+    tools:
+      observations: true
+
+    advisor:
+      observations:
+        enabled: true
+
     ollama:
       base-url: http://localhost:11434/
+      #base-url: https://4964-211-195-194-162.ngrok-free.app
       embedding:
         options:
           model: nomic-embed-text
@@ -64,7 +77,9 @@ spring:
         index-type: hnsw
         distance-type: cosine-distance
         table-name: vector_store
-#        remove-existing-vector-store-table: true
+        observations:
+          include-query-rsponse: true # 벡터스토어 응답 로그 찍기
+  #        remove-existing-vector-store-table: true
 
   data:
     redis:
@@ -86,6 +101,19 @@ google:
     token-uri: "https://oauth2.googleapis.com/token"
     user-info-uri: "https://www.googleapis.com/oauth2/v3/userinfo"
 
+
+
+# 스프링 액츄에이터의 모든 메트릭 노출 활성화
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
 logging:
   level:
